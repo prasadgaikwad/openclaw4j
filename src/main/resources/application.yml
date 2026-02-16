@@ -4,26 +4,44 @@
 spring:
   application:
     name: openclaw4j
+  profiles:
+    active: dev
+  main:
+    web-application-type: servlet
+  
+  # Global AI Defaults - Disabled by default to prevent bean conflicts
+  # Only one should be enabled via profiles below.
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY:any}
+      chat:
+        enabled: false
+        options:
+          model: gpt-4o
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        enabled: false
+        options:
+          model: kimi-k2-thinking:cloud
 
 server:
   port: 8080
 
 # ─────────────────────────────────────────────
-# OpenClaw4J Agent Configuration
+# OpenClaw4J Agent Configuration (Common)
 # ─────────────────────────────────────────────
 openclaw4j:
   channel:
     slack:
-      # These values are injected from environment variables.
-      # Set them in your .env file or export them in your shell.
-      # See .env.example for details.
       bot-token: ${SLACK_BOT_TOKEN:}
       signing-secret: ${SLACK_SIGNING_SECRET:}
+  ai:
+    # Options: openai, ollama
+    provider: ollama
 
 # ─────────────────────────────────────────────
 # Actuator — Health & Monitoring
-# Exposes the /actuator/health endpoint for
-# liveness and readiness checks.
 # ─────────────────────────────────────────────
 management:
   endpoints:
@@ -37,14 +55,34 @@ management:
 # ─────────────────────────────────────────────
 # Logging
 # ─────────────────────────────────────────────
-  ai:
-    openai:
-      api-key: ${SPRING_AI_OPENAI_API_KEY}
-      chat:
-        options:
-          model: gpt-4o
-
 logging:
   level:
     dev.prasadgaikwad.openclaw4j: DEBUG
     com.slack.api: INFO
+    org.springframework.ai: INFO
+
+---
+# ─────────────────────────────────────────────
+# Profile: openai (Default startup profile)
+# ─────────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: openai
+  ai:
+    openai:
+      chat:
+        enabled: true
+
+---
+# ─────────────────────────────────────────────
+# Profile: ollama
+# ─────────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: ollama
+  ai:
+    ollama:
+      chat:
+        enabled: true

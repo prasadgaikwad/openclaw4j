@@ -107,7 +107,7 @@ User receives agent response
 |-----------|-----------|
 | Language | Java 25 (records, sealed types, virtual threads, structured concurrency) |
 | Framework | Spring Boot 3.5.10 (modular starters, declarative clients, `@Retryable`) |
-| AI | Spring AI 1.1.2 (ChatClient, Advisors, MCP, function calling) |
+| AI | Spring AI 1.1.2 (ChatClient, OpenAI, Ollama, Advisors, MCP) |
 | Vector Store | PGVector (PostgreSQL) |
 | Build | Gradle (Kotlin DSL) |
 | Testing | JUnit 5, Testcontainers, WireMock, RestTestClient |
@@ -128,6 +128,7 @@ openclaw4j/
 │   │   ├── ChannelAdapter.java          # Sealed interface
 │   │   └── slack/                       # Slack-specific implementation
 │   ├── agent/                           # Agent core (planner, executor, context)
+│   ├── config/                          # AI & Provider configurations (AIConfig.java)
 │   ├── memory/                          # Layered memory system
 │   ├── tool/                            # MCP tool registry & implementations
 │   ├── rag/                             # RAG pipeline (indexer, vector store)
@@ -197,6 +198,33 @@ graph TD
 ### Slack App Setup
 
 > 📝 **Step-by-step guide:** See [docs/SLACK_SETUP.md](./SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
+
+### Configuring LLM Providers
+
+OpenClaw4J supports multiple LLM providers. You can switch them without changing code by updating `application.yml` or using command-line arguments.
+
+#### Switching via Property
+Set the provider in `src/main/resources/application.yml`:
+
+```yaml
+openclaw4j:
+  ai:
+    provider: ollama # or 'openai'
+```
+
+#### Running with Ollama (Local)
+1. Ensure Ollama is running (`ollama serve`).
+2. Activate the `ollama` profile and set the provider:
+   ```bash
+   ./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
+   ```
+
+#### Running with OpenAI (Cloud)
+1. Set your API key: `export SPRING_AI_OPENAI_API_KEY=sk-...`
+2. Run with default settings or explicit profile:
+   ```bash
+   ./gradlew bootRun --args='--spring.profiles.active=openai --openclaw4j.ai.provider=openai'
+   ```
 
 ### Quick Start
 

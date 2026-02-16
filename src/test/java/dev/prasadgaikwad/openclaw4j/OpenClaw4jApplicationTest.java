@@ -3,6 +3,7 @@ package dev.prasadgaikwad.openclaw4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 /**
@@ -33,6 +34,7 @@ import org.springframework.test.context.TestPropertySource;
  * </p>
  */
 @SpringBootTest
+@ActiveProfiles("openai")
 @TestPropertySource(properties = {
         "openclaw4j.channel.slack.bot-token=xoxb-test-token",
         "openclaw4j.channel.slack.signing-secret=test-signing-secret",

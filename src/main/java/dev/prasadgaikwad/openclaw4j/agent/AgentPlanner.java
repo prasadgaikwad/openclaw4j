@@ -22,8 +22,8 @@ public class AgentPlanner {
     private static final Logger logger = LoggerFactory.getLogger(AgentPlanner.class);
     private final ChatClient chatClient;
 
-    public AgentPlanner(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public AgentPlanner(ChatClient chatClient) {
+        this.chatClient = chatClient;
     }
 
     /**
