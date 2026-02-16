@@ -69,4 +69,10 @@ public sealed interface ChannelType {
      */
     record WhatsApp(String phoneNumberId) implements ChannelType {
     }
+
+    /**
+     * Represents a console channel connection.
+     */
+    record Console() implements ChannelType {
+    }
 }

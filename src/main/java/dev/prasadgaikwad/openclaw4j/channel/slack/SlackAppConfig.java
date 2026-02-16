@@ -107,6 +107,10 @@ public class SlackAppConfig {
 
         var app = new App(appConfig);
 
+        app.command("/go", (req, ctx) -> {
+            return ctx.ack(":wave: Hello! Today is a good day to start something new.");
+        });
+
         // ─────────────────────────────────────────────
         // Register event handler: message
         // ─────────────────────────────────────────────
