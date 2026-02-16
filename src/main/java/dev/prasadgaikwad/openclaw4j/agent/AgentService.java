@@ -2,11 +2,19 @@ package dev.prasadgaikwad.openclaw4j.agent;
 
 import dev.prasadgaikwad.openclaw4j.channel.InboundMessage;
 import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
+import dev.prasadgaikwad.openclaw4j.memory.MemorySnapshot;
+import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.function.Function;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Optional;
 
 /**
  * The central orchestrator of the OpenClaw4J agent.
@@ -19,11 +27,11 @@ import java.util.function.Function;
  * for all agent logic, regardless of which channel the message came from.
  * </p>
  *
- * <h2>MVP Slice 1: Echo Mode</h2>
+ * <h2>MVP Slice 2: Intelligence</h2>
  * <p>
- * In this slice, the agent simply echoes back the received message.
- * This validates the full pipeline: Slack → Adapter → Agent → Adapter → Slack.
- * In Slice 2, this will be replaced with LLM-powered reasoning.
+ * In this slice, the agent uses {@link AgentPlanner} and Spring AI to generate
+ * intelligent responses based on conversation history and a system prompt.
+ * The simple echo behavior from Slice 1 has been replaced.
  * </p>
  *
  * <h2>Functional Style</h2>
@@ -36,7 +44,6 @@ import java.util.function.Function;
  *
  * <h2>Future Slices</h2>
  * <ul>
- * <li><strong>Slice 2</strong>: Replace echo with LLM-powered ChatClient</li>
  * <li><strong>Slice 3</strong>: Add MCP tool orchestration</li>
  * <li><strong>Slice 4</strong>: Inject memory context before processing</li>
  * </ul>
@@ -49,41 +56,24 @@ public class AgentService {
 
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
-    /**
-     * The processing pipeline that transforms an inbound message into an outbound
-     * response.
-     *
-     * <h3>Functional Programming: Function Composition</h3>
-     * <p>
-     * By defining the pipeline as a {@code Function}, we can easily compose
-     * multiple processing steps in future slices:
-     * </p>
-     * 
-     * <pre>{@code
-     * Function<InboundMessage, OutboundMessage> pipeline = enrichWithMemory
-     *         .andThen(enrichWithRAG)
-     *         .andThen(planWithLLM)
-     *         .andThen(executeTools)
-     *         .andThen(composeResponse);
-     * }</pre>
-     */
-    private final Function<InboundMessage, OutboundMessage> processingPipeline;
+    private final AgentPlanner agentPlanner;
+    private final ShortTermMemory shortTermMemory;
 
-    /**
-     * Creates the AgentService with the default echo pipeline.
-     */
-    public AgentService() {
-        // Slice 1: Simple echo pipeline.
-        // This will be replaced with a multi-stage LLM pipeline in Slice 2.
-        this.processingPipeline = this::echo;
+    private final Resource systemPromptResource;
+
+    public AgentService(AgentPlanner agentPlanner,
+            ShortTermMemory shortTermMemory,
+            @Value("classpath:prompts/system.prompt") Resource systemPromptResource) {
+        this.agentPlanner = agentPlanner;
+        this.shortTermMemory = shortTermMemory;
+        this.systemPromptResource = systemPromptResource;
     }
 
     /**
      * Processes an inbound message and returns the agent's response.
      *
      * <p>
-     * This is the main entry point called by channel adapters. It delegates
-     * to the configured processing pipeline.
+     * This is the main entry point called by channel adapters.
      * </p>
      *
      * @param message the normalized inbound message from any channel
@@ -93,35 +83,53 @@ public class AgentService {
         log.info("Processing message from user={} in channel={}: {}",
                 message.userId(), message.channelId(), truncate(message.content(), 100));
 
-        var response = processingPipeline.apply(message);
+        // 1. Determine context ID (thread ID or channel ID)
+        String contextId = message.threadId().orElse(message.channelId());
+
+        // 2. Retrieve conversation history
+        var history = shortTermMemory.getHistory(contextId);
+
+        // 3. Build Agent Context
+        // Load system prompt from resource
+        String systemPrompt = "You are a helpful assistant.";
+        try {
+            systemPrompt = systemPromptResource.getContentAsString(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("Failed to load system prompt", e);
+        }
+
+        // For MVP-2, we use a default profile and empty snapshots/tools
+        var profile = new AgentProfile(
+                "User",
+                "Helpful Assistant",
+                systemPrompt,
+                Collections.emptyMap());
+
+        var memorySnapshot = new MemorySnapshot(
+                Collections.emptyList(),
+                Collections.emptyMap(),
+                Optional.empty(),
+                Optional.empty());
+
+        var context = new AgentContext(
+                message,
+                history,
+                memorySnapshot,
+                Collections.emptyList(),
+                profile,
+                Collections.emptyList());
+
+        // 4. Plan and Generate Response
+        String responseText = agentPlanner.plan(context);
+
+        // 5. Update Short-Term Memory
+        // Add User Message
+        shortTermMemory.addMessage(contextId, new UserMessage(message.content()));
+        // Add Agent Response
+        shortTermMemory.addMessage(contextId, new AssistantMessage(responseText));
 
         log.info("Agent response for channel={}: {}",
-                message.channelId(), truncate(response.content(), 100));
-
-        return response;
-    }
-
-    /**
-     * Echo pipeline — returns the message content with a friendly prefix.
-     *
-     * <h3>Design Note</h3>
-     * <p>
-     * Even though this is a simple echo, we follow the full pipeline pattern:
-     * receive → process → respond. This proves the entire message flow works
-     * end-to-end before we add complexity.
-     * </p>
-     *
-     * @param message the inbound message to echo
-     * @return an outbound message echoing the content
-     */
-    private OutboundMessage echo(InboundMessage message) {
-        var responseText = """
-                🦞 **OpenClaw4J received your message:**
-                > %s
-
-                _I'm currently in echo mode (Slice 1). \
-                LLM-powered responses coming in Slice 2!_\
-                """.formatted(message.content());
+                message.channelId(), truncate(responseText, 100));
 
         return OutboundMessage.textReply(
                 message.channelId(),

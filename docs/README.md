@@ -1,6 +1,6 @@
 # 🦞 OpenClaw4J
 
-> **An autonomous AI agent framework for Java** — built with Spring Boot 4.0.2, Spring AI 1.1.2, and Java 25.
+> **An autonomous AI agent framework for Java** — built with Spring Boot 3.5.10, Spring AI 1.1.2, and Java 25.
 
 OpenClaw4J is an intelligent agent that lives inside your messaging channels. Send it a message in natural language — it reads, understands, plans, and executes tasks using LLM reasoning, MCP tools, RAG retrieval, and layered persistent memory — then reports back in the same channel.
 
@@ -106,7 +106,7 @@ User receives agent response
 | Component | Technology |
 |-----------|-----------|
 | Language | Java 25 (records, sealed types, virtual threads, structured concurrency) |
-| Framework | Spring Boot 4.0.2 (modular starters, declarative clients, `@Retryable`) |
+| Framework | Spring Boot 3.5.10 (modular starters, declarative clients, `@Retryable`) |
 | AI | Spring AI 1.1.2 (ChatClient, Advisors, MCP, function calling) |
 | Vector Store | PGVector (PostgreSQL) |
 | Build | Gradle (Kotlin DSL) |
@@ -119,7 +119,8 @@ User receives agent response
 openclaw4j/
 ├── docs/                                # Specification & documentation
 │   ├── PRD.md                           # Product requirements & technical spec
-│   └── README.md                        # This file
+│   ├── README.md                        # This file
+│   └── learning/                        # Learning guides per slice
 │
 ├── src/main/java/com/openclaw/agent/
 │   ├── OpenClaw4jApplication.java       # Entry point
@@ -134,7 +135,7 @@ openclaw4j/
 │
 ├── src/main/resources/
 │   ├── application.yml
-│   └── prompts/                         # System prompt templates
+│   └── prompts/                         # System prompt templates (system.prompt)
 │
 ├── memory/                              # Agent's persistent brain (gitignored)
 │   ├── MEMORY.md                        # Curated long-term memory
@@ -172,7 +173,7 @@ graph TD
 | Slice | Name | Goal |
 |-------|------|------|
 | **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter |
-| **MVP-2** | Intelligence | LLM-powered responses with conversation history |
+| **MVP-2** | Intelligence | LLM-powered responses with conversation history (Done) |
 | **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) |
 | **MVP-4** | Memory | Persistent layered memory system |
 | **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval |

@@ -37,6 +37,13 @@ management:
 # ─────────────────────────────────────────────
 # Logging
 # ─────────────────────────────────────────────
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+
 logging:
   level:
     dev.prasadgaikwad.openclaw4j: DEBUG

@@ -35,7 +35,8 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @TestPropertySource(properties = {
         "openclaw4j.channel.slack.bot-token=xoxb-test-token",
-        "openclaw4j.channel.slack.signing-secret=test-signing-secret"
+        "openclaw4j.channel.slack.signing-secret=test-signing-secret",
+        "spring.ai.openai.api-key=test"
 })
 class OpenClaw4jApplicationTest {
 

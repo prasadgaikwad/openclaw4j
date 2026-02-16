@@ -2,93 +2,99 @@ package dev.prasadgaikwad.openclaw4j.agent;
 
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
 import dev.prasadgaikwad.openclaw4j.channel.InboundMessage;
+import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for the {@link AgentService}.
- *
- * <h2>Testing Strategy</h2>
- * <p>
- * Since the agent service is a pure function in Slice 1 (input → output,
- * no side effects), we can test it without any mocks or Spring context.
- * This is a key benefit of the functional programming style.
- * </p>
  */
+@ExtendWith(MockitoExtension.class)
 class AgentServiceTest {
 
-    private final AgentService agentService = new AgentService();
+        @Mock
+        private AgentPlanner agentPlanner;
 
-    @Test
-    @DisplayName("Echo pipeline should return message with OpenClaw4J prefix")
-    void process_shouldEchoMessageWithPrefix() {
-        // Arrange — create a sample inbound message
-        var inbound = new InboundMessage(
-                "C12345",
-                Optional.empty(),
-                "U67890",
-                "Hello, OpenClaw4J!",
-                new ChannelType.Slack("T11111"),
-                Instant.now(),
-                Map.of());
+        @Mock
+        private ShortTermMemory shortTermMemory;
 
-        // Act — process the message through the agent
-        var outbound = agentService.process(inbound);
+        @Mock
+        private org.springframework.core.io.Resource systemPromptResource;
 
-        // Assert — the response should contain the original message
-        assertNotNull(outbound);
-        assertTrue(outbound.content().contains("Hello, OpenClaw4J!"),
-                "Response should contain the original message text");
-        assertTrue(outbound.content().contains("OpenClaw4J"),
-                "Response should contain the OpenClaw4J identifier");
-    }
+        private AgentService agentService;
 
-    @Test
-    @DisplayName("Echo pipeline should preserve channel and thread IDs")
-    void process_shouldPreserveChannelAndThread() {
-        // Arrange — message with a thread ID
-        var threadId = Optional.of("1234567890.123456");
-        var inbound = new InboundMessage(
-                "C12345",
-                threadId,
-                "U67890",
-                "Hello from a thread",
-                new ChannelType.Slack("T11111"),
-                Instant.now(),
-                Map.of());
+        @BeforeEach
+        void setUp() {
+                agentService = new AgentService(agentPlanner, shortTermMemory, systemPromptResource);
+        }
 
-        // Act
-        var outbound = agentService.process(inbound);
+        @Test
+        @DisplayName("Process should use planner to generate response")
+        void process_shouldUsePlanner() {
+                // Arrange
+                var inbound = new InboundMessage(
+                                "C12345",
+                                Optional.empty(),
+                                "U67890",
+                                "Hello, Agent!",
+                                new ChannelType.Slack("T11111"),
+                                Instant.now(),
+                                Map.of());
 
-        // Assert — channel and thread should be carried through
-        assertEquals("C12345", outbound.channelId());
-        assertEquals(threadId, outbound.threadId());
-    }
+                when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
+                when(agentPlanner.plan(any())).thenReturn("Hello, User! I am OpenClaw4J.");
 
-    @Test
-    @DisplayName("Echo pipeline should preserve the source channel type")
-    void process_shouldPreserveSourceChannelType() {
-        // Arrange
-        var slackSource = new ChannelType.Slack("T11111");
-        var inbound = new InboundMessage(
-                "C12345",
-                Optional.empty(),
-                "U67890",
-                "Test message",
-                slackSource,
-                Instant.now(),
-                Map.of());
+                // Act
+                var outbound = agentService.process(inbound);
 
-        // Act
-        var outbound = agentService.process(inbound);
+                // Assert
+                assertNotNull(outbound);
+                assertEquals("Hello, User! I am OpenClaw4J.", outbound.content());
+                assertEquals("C12345", outbound.channelId());
 
-        // Assert — the response destination should match the source
-        assertEquals(slackSource, outbound.destination());
-    }
+                // Verify interactions
+                verify(shortTermMemory).getHistory("C12345");
+                verify(agentPlanner).plan(any(AgentContext.class));
+                verify(shortTermMemory, times(2)).addMessage(eq("C12345"), any()); // User + Assistant messages
+        }
+
+        @Test
+        @DisplayName("Process should preserve channel and thread IDs")
+        void process_shouldPreserveChannelAndThread() {
+                // Arrange
+                var threadId = Optional.of("1234567890.123456");
+                var inbound = new InboundMessage(
+                                "C12345",
+                                threadId,
+                                "U67890",
+                                "Hello from a thread",
+                                new ChannelType.Slack("T11111"),
+                                Instant.now(),
+                                Map.of());
+
+                when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
+                when(agentPlanner.plan(any())).thenReturn("Thread reply");
+
+                // Act
+                var outbound = agentService.process(inbound);
+
+                // Assert
+                assertEquals("C12345", outbound.channelId());
+                assertEquals(threadId, outbound.threadId());
+                verify(shortTermMemory).getHistory("1234567890.123456"); // Uses threadId as context
+        }
 }
