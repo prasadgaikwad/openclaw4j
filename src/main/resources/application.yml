@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────
+# OpenClaw4J — Application Configuration
+# ─────────────────────────────────────────────
+spring:
+  application:
+    name: openclaw4j
+
+server:
+  port: 8080
+
+# ─────────────────────────────────────────────
+# OpenClaw4J Agent Configuration
+# ─────────────────────────────────────────────
+openclaw4j:
+  channel:
+    slack:
+      # These values are injected from environment variables.
+      # Set them in your .env file or export them in your shell.
+      # See .env.example for details.
+      bot-token: ${SLACK_BOT_TOKEN:}
+      signing-secret: ${SLACK_SIGNING_SECRET:}
+
+# ─────────────────────────────────────────────
+# Actuator — Health & Monitoring
+# Exposes the /actuator/health endpoint for
+# liveness and readiness checks.
+# ─────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+
+# ─────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────
+logging:
+  level:
+    dev.prasadgaikwad.openclaw4j: DEBUG
+    com.slack.api: INFO

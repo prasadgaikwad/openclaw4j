@@ -1,0 +1,115 @@
+package dev.prasadgaikwad.openclaw4j.channel.slack;
+
+import com.slack.api.methods.MethodsClient;
+import com.slack.api.methods.SlackApiException;
+import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import dev.prasadgaikwad.openclaw4j.channel.ChannelAdapter;
+import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
+import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+/**
+ * Slack implementation of the {@link ChannelAdapter} sealed interface.
+ *
+ * <h2>Responsibility</h2>
+ * <p>
+ * This adapter handles <strong>outbound</strong> message delivery to Slack.
+ * Inbound messages are handled by the Bolt {@code App} event handlers
+ * configured in {@link SlackAppConfig}.
+ * </p>
+ *
+ * <h2>Why Separate Inbound and Outbound?</h2>
+ * <p>
+ * Slack's Bolt SDK uses an event-driven model for inbound messages — you
+ * register handlers on the {@code App} object, and Bolt dispatches events to
+ * them.
+ * Outbound messages, however, use the imperative {@code MethodsClient} API.
+ * Separating these concerns keeps each class focused.
+ * </p>
+ *
+ * <h2>Design Pattern: Adapter</h2>
+ * <p>
+ * This class adapts the normalized {@link OutboundMessage} into Slack's
+ * {@code ChatPostMessageRequest}. The agent core never touches Slack's API
+ * directly — it just produces an {@code OutboundMessage}.
+ * </p>
+ *
+ * @see ChannelAdapter
+ * @see SlackAppConfig
+ */
+@Component
+public final class SlackChannelAdapter implements ChannelAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(SlackChannelAdapter.class);
+
+    private final MethodsClient methodsClient;
+
+    /**
+     * Creates a new SlackChannelAdapter.
+     *
+     * @param methodsClient the Slack Web API client, configured with the bot token.
+     *                      This bean is created in {@link SlackAppConfig}.
+     */
+    public SlackChannelAdapter(MethodsClient methodsClient) {
+        this.methodsClient = methodsClient;
+    }
+
+    /**
+     * Sends a message to a Slack channel or thread.
+     *
+     * <h3>Slack API: chat.postMessage</h3>
+     * <p>
+     * This method translates our normalized {@link OutboundMessage} into a
+     * Slack {@code chat.postMessage} API call. If a {@code threadId} is present,
+     * the reply is posted as a threaded response.
+     * </p>
+     *
+     * @param message the normalized outbound message to send
+     */
+    @Override
+    public void sendMessage(OutboundMessage message) {
+        try {
+            // Build the Slack API request from our normalized OutboundMessage.
+            // Note how the builder pattern maps cleanly to our record fields.
+            var requestBuilder = ChatPostMessageRequest.builder()
+                    .channel(message.channelId())
+                    .text(message.content());
+
+            // If the message is part of a thread, reply in that thread.
+            // Optional.ifPresent() is a functional way to conditionally apply a value.
+            message.threadId().ifPresent(requestBuilder::threadTs);
+
+            var response = methodsClient.chatPostMessage(requestBuilder.build());
+
+            if (response.isOk()) {
+                log.debug("Message sent to Slack channel={}, thread={}",
+                        message.channelId(), message.threadId().orElse("none"));
+            } else {
+                log.error("Slack API error: {}", response.getError());
+            }
+        } catch (IOException | SlackApiException e) {
+            log.error("Failed to send message to Slack channel={}: {}",
+                    message.channelId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the channel type this adapter handles.
+     *
+     * <p>
+     * We use an empty workspace ID here because the workspace is determined
+     * by the bot token, not by this adapter. In a multi-workspace deployment,
+     * you would have one adapter per workspace.
+     * </p>
+     *
+     * @return a Slack channel type
+     */
+    @Override
+    public ChannelType channelType() {
+        return new ChannelType.Slack("");
+    }
+}

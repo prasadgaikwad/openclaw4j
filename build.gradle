@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'dev.prasadgaikwad'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+    // Spring milestones/snapshots if needed for cutting-edge Spring AI
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+dependencies {
+    // ─────────────────────────────────────────────
+    // Spring Boot Starters
+    // ─────────────────────────────────────────────
+    // Web starter for REST endpoints (Slack webhook receiver)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Actuator for health checks and observability
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // ─────────────────────────────────────────────
+    // Slack Bolt SDK
+    // The Bolt framework simplifies building Slack apps.
+    // - bolt: core event handling and middleware
+    // - bolt-servlet: adapts Bolt to run as a Servlet (fits Spring Boot's embedded Tomcat)
+    // ─────────────────────────────────────────────
+    implementation 'com.slack.api:bolt:1.47.0'
+    implementation 'com.slack.api:bolt-jakarta-servlet:1.47.0'
+
+    // ─────────────────────────────────────────────
+    // Testing
+    // ─────────────────────────────────────────────
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

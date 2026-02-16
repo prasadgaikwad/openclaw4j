@@ -1,0 +1,229 @@
+# 🦞 OpenClaw4J
+
+> **An autonomous AI agent framework for Java** — built with Spring Boot 4.0.2, Spring AI 1.1.2, and Java 25.
+
+OpenClaw4J is an intelligent agent that lives inside your messaging channels. Send it a message in natural language — it reads, understands, plans, and executes tasks using LLM reasoning, MCP tools, RAG retrieval, and layered persistent memory — then reports back in the same channel.
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "🗨️ Messaging Channels"
+        SL["Slack"]
+        DC["Discord"]
+        WA["WhatsApp"]
+    end
+
+    subgraph "🦞 OpenClaw4J"
+        subgraph "Inbound / Outbound"
+            CA["Channel Adapters"]
+        end
+
+        subgraph "🧠 Agent Core"
+            CB["Context Builder"]
+            AP["Agent Planner<br/>(ReAct Loop)"]
+            TE["Task Executor"]
+            RC["Response Composer"]
+        end
+
+        subgraph "💾 Memory"
+            STM["Short-Term"]
+            LTM["Long-Term<br/>(MEMORY.md)"]
+            PF["Profiles<br/>(USER/SOUL/TOOLS.md)"]
+        end
+
+        subgraph "🔧 Tools (MCP)"
+            GH["GitHub"]
+            SLT["Slack"]
+            NT["Notion"]
+        end
+
+        subgraph "📚 RAG"
+            IDX["Channel Indexer"]
+            VS["Vector Store"]
+        end
+
+        subgraph "⏰ Scheduler"
+            REM["Reminders"]
+            HB["Heartbeat"]
+        end
+    end
+
+    subgraph "☁️ External"
+        LLM["LLM Provider"]
+    end
+
+    SL & DC & WA --> CA
+    CA --> CB
+    CB --> STM & LTM & PF & VS
+    CB --> AP
+    AP <--> LLM
+    AP --> TE --> GH & SLT & NT
+    AP --> RC --> CA
+    REM & HB --> CB
+```
+
+## How It Works
+
+```
+User sends message in Slack
+        │
+        ▼
+┌─────────────────────────────┐
+│  1. Channel Adapter         │  Normalize platform event → InboundMessage
+├─────────────────────────────┤
+│  2. Context Builder         │  Assemble memory + RAG + history + tools
+├─────────────────────────────┤
+│  3. Agent Planner (ReAct)   │  LLM reasons: Think → Act → Observe → Repeat
+├─────────────────────────────┤
+│  4. Task Executor           │  Invoke MCP tools (GitHub, Slack, Notion…)
+├─────────────────────────────┤
+│  5. Response Composer       │  Format result for the target channel
+├─────────────────────────────┤
+│  6. Channel Adapter         │  Post response back to Slack
+└─────────────────────────────┘
+        │
+        ▼
+User receives agent response
+```
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-channel** | Slack (MVP) → Discord → WhatsApp |
+| **Agentic reasoning** | ReAct loop with LLM-powered planning |
+| **MCP tools** | GitHub issues/PRs, Slack messaging, Notion pages |
+| **RAG knowledge** | Vector-indexed channel history for contextual answers |
+| **Layered memory** | Short-term → working → long-term → profiles → task state |
+| **Reminders** | Time-based reminders with cron scheduling |
+| **Heartbeat** | Periodic background checks and proactive notifications |
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Language | Java 25 (records, sealed types, virtual threads, structured concurrency) |
+| Framework | Spring Boot 4.0.2 (modular starters, declarative clients, `@Retryable`) |
+| AI | Spring AI 1.1.2 (ChatClient, Advisors, MCP, function calling) |
+| Vector Store | PGVector (PostgreSQL) |
+| Build | Gradle (Kotlin DSL) |
+| Testing | JUnit 5, Testcontainers, WireMock, RestTestClient |
+| Observability | Micrometer + OpenTelemetry |
+
+## Project Structure
+
+```
+openclaw4j/
+├── docs/                                # Specification & documentation
+│   ├── PRD.md                           # Product requirements & technical spec
+│   └── README.md                        # This file
+│
+├── src/main/java/com/openclaw/agent/
+│   ├── OpenClaw4jApplication.java       # Entry point
+│   ├── channel/                         # Channel adapters (Slack, Discord, etc.)
+│   │   ├── ChannelAdapter.java          # Sealed interface
+│   │   └── slack/                       # Slack-specific implementation
+│   ├── agent/                           # Agent core (planner, executor, context)
+│   ├── memory/                          # Layered memory system
+│   ├── tool/                            # MCP tool registry & implementations
+│   ├── rag/                             # RAG pipeline (indexer, vector store)
+│   └── scheduler/                       # Reminders & heartbeat
+│
+├── src/main/resources/
+│   ├── application.yml
+│   └── prompts/                         # System prompt templates
+│
+├── memory/                              # Agent's persistent brain (gitignored)
+│   ├── MEMORY.md                        # Curated long-term memory
+│   ├── USER.md                          # User preferences
+│   ├── SOUL.md                          # Agent personality & behavior
+│   ├── TOOLS.md                         # Environment & tool notes
+│   └── heartbeat-state.json             # Scheduler state
+│
+└── build.gradle.kts
+```
+
+## Memory System
+
+```mermaid
+graph TD
+    STM["🧠 Short-Term<br/>In-memory conversation window"]
+    WM["📋 Working<br/>Session notes (not persisted)"]
+    LTM["📁 Long-Term<br/>MEMORY.md + memory/YYYY-MM-DD.md"]
+    PF["👤 Profiles<br/>USER.md · SOUL.md · TOOLS.md"]
+    TS["⏱️ Task State<br/>heartbeat-state.json"]
+
+    STM --> WM --> LTM --> PF --> TS
+
+    style STM fill:#4A90D9,color:#fff
+    style WM fill:#7B68EE,color:#fff
+    style LTM fill:#E67E22,color:#fff
+    style PF fill:#27AE60,color:#fff
+    style TS fill:#E74C3C,color:#fff
+```
+
+**Recall protocol:** Before answering about past work, preferences, or todos, the agent searches `MEMORY.md` + `memory/*.md`, loads only needed lines, and includes them in the prompt context.
+
+## MVP Roadmap
+
+| Slice | Name | Goal |
+|-------|------|------|
+| **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter |
+| **MVP-2** | Intelligence | LLM-powered responses with conversation history |
+| **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) |
+| **MVP-4** | Memory | Persistent layered memory system |
+| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval |
+| **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks |
+| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter |
+
+> See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
+
+## Getting Started
+
+> 🚧 **Coming soon** — MVP-1 implementation will include setup instructions.
+
+### Prerequisites
+
+- Java 25+
+- Gradle 8+
+- PostgreSQL 16+ (for PGVector)
+- A Slack workspace with bot permissions
+- An LLM API key (OpenAI, Anthropic, or Ollama)
+
+### Slack App Setup
+
+> 📝 **Step-by-step guide:** See [docs/SLACK_SETUP.md](./SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/openclaw4j.git
+cd openclaw4j
+
+# Copy environment template
+cp .env.example .env
+# Edit .env with your API keys and tokens
+
+# Run the application
+./gradlew bootRun
+```
+
+## Design Principles
+
+1. **Functional first** — Immutable records, pure functions, stream pipelines, pattern matching
+2. **Folder clarity** — Each folder is a bounded context; no unnecessary nesting
+3. **Educational** — Thorough comments explaining *why*, not just *what*
+4. **Incremental delivery** — Each MVP slice is fully functional end-to-end
+5. **Privacy by default** — Memory files gitignored, no actions without user confirmation
+
+## License
+
+MIT
+
+---
+
+*Built with ❤️ using Spring Boot 4.0.2, Spring AI 1.1.2, and Java 25.*
