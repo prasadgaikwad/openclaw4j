@@ -57,9 +57,9 @@ public class AgentPlanner {
         messages.add(new UserMessage(context.message().content()));
 
         // 2. Call LLM
-        // In MVP-3 we will use .tools(context.availableTools())
         String response = chatClient.prompt()
                 .messages(messages)
+                .tools(context.availableTools().toArray())
                 .call()
                 .content();
 

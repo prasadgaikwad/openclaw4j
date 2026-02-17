@@ -18,10 +18,10 @@ import java.util.List;
  * @param availableTools      List of available tools (names/definitions)
  */
 public record AgentContext(
-        InboundMessage message,
-        List<Message> conversationHistory,
-        MemorySnapshot memory,
-        List<Document> ragDocuments,
-        AgentProfile profile,
-        List<String> availableTools) {
+                InboundMessage message,
+                List<Message> conversationHistory,
+                MemorySnapshot memory,
+                List<Document> ragDocuments,
+                AgentProfile profile,
+                List<Object> availableTools) {
 }

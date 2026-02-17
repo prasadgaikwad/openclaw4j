@@ -107,7 +107,8 @@ User receives agent response
 |-----------|-----------|
 | Language | Java 25 (records, sealed types, virtual threads, structured concurrency) |
 | Framework | Spring Boot 3.5.10 (modular starters, declarative clients, `@Retryable`) |
-| AI | Spring AI 1.1.2 (ChatClient, OpenAI, Ollama, Advisors, MCP) |
+| AI | Spring AI 1.1.2 (ChatClient, OpenAI, Ollama, Tools) |
+| Tools | GitHub API, Slack Bolt SDK |
 | Vector Store | PGVector (PostgreSQL) |
 | Build | Gradle (Kotlin DSL) |
 | Testing | JUnit 5, Testcontainers, WireMock, RestTestClient |
@@ -122,17 +123,16 @@ openclaw4j/
 │   ├── README.md                        # This file
 │   └── learning/                        # Learning guides per slice
 │
-├── src/main/java/com/openclaw/agent/
+├── src/main/java/dev/prasadgaikwad/openclaw4j/
 │   ├── OpenClaw4jApplication.java       # Entry point
-│   ├── channel/                         # Channel adapters (Slack, Discord, etc.)
+│   ├── channel/                         # Channel adapters (Slack, Console)
 │   │   ├── ChannelAdapter.java          # Sealed interface
-│   │   └── slack/                       # Slack-specific implementation
-│   ├── agent/                           # Agent core (planner, executor, context)
-│   ├── config/                          # AI & Provider configurations (AIConfig.java)
-│   ├── memory/                          # Layered memory system
-│   ├── tool/                            # MCP tool registry & implementations
-│   ├── rag/                             # RAG pipeline (indexer, vector store)
-│   └── scheduler/                       # Reminders & heartbeat
+│   │   └── slack/                       # Slack implementation
+│   ├── agent/                           # Agent core (planner, service, context)
+│   ├── config/                          # Configuration (AIConfig, SlackAppConfig)
+│   ├── memory/                          # Memory management (ShortTermMemory)
+│   ├── tool/                            # Tool System (ToolRegistry, GitHubTool, SlackTool)
+│   └── util/                            # Utilities
 │
 ├── src/main/resources/
 │   ├── application.yml
@@ -173,9 +173,9 @@ graph TD
 
 | Slice | Name | Goal |
 |-------|------|------|
-| **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter |
+| **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter (Done) |
 | **MVP-2** | Intelligence | LLM-powered responses with conversation history (Done) |
-| **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) |
+| **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) (Done) |
 | **MVP-4** | Memory | Persistent layered memory system |
 | **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval |
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks |
@@ -255,4 +255,4 @@ MIT
 
 ---
 
-*Built with ❤️ using Spring Boot 4.0.2, Spring AI 1.1.2, and Java 25.*
+*Built with ❤️ using Spring Boot 3.5.10, Spring AI 1.1.2, and Java 25.*

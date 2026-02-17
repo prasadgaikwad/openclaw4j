@@ -39,6 +39,11 @@ openclaw4j:
   ai:
     # Options: openai, ollama
     provider: ollama
+  tools:
+    github:
+      token: ${GITHUB_TOKEN:}
+      owner: ${GITHUB_OWNER:}
+      repo: ${GITHUB_REPO:}
 
 # ─────────────────────────────────────────────
 # Actuator — Health & Monitoring

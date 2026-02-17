@@ -4,6 +4,7 @@ import dev.prasadgaikwad.openclaw4j.channel.InboundMessage;
 import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
 import dev.prasadgaikwad.openclaw4j.memory.MemorySnapshot;
 import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
+import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -59,13 +60,16 @@ public class AgentService {
     private final AgentPlanner agentPlanner;
     private final ShortTermMemory shortTermMemory;
 
+    private final ToolRegistry toolRegistry;
     private final Resource systemPromptResource;
 
     public AgentService(AgentPlanner agentPlanner,
             ShortTermMemory shortTermMemory,
+            ToolRegistry toolRegistry,
             @Value("classpath:prompts/system.prompt") Resource systemPromptResource) {
         this.agentPlanner = agentPlanner;
         this.shortTermMemory = shortTermMemory;
+        this.toolRegistry = toolRegistry;
         this.systemPromptResource = systemPromptResource;
     }
 
@@ -98,7 +102,7 @@ public class AgentService {
             log.error("Failed to load system prompt", e);
         }
 
-        // For MVP-2, we use a default profile and empty snapshots/tools
+        // For MVP-3, we inject tools from the registry
         var profile = new AgentProfile(
                 "User",
                 "Helpful Assistant",
@@ -117,7 +121,7 @@ public class AgentService {
                 memorySnapshot,
                 Collections.emptyList(),
                 profile,
-                Collections.emptyList());
+                toolRegistry.getTools());
 
         // 4. Plan and Generate Response
         String responseText = agentPlanner.plan(context);

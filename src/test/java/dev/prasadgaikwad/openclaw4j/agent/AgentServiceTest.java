@@ -3,6 +3,7 @@ package dev.prasadgaikwad.openclaw4j.agent;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
 import dev.prasadgaikwad.openclaw4j.channel.InboundMessage;
 import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
+import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,13 +34,16 @@ class AgentServiceTest {
         private ShortTermMemory shortTermMemory;
 
         @Mock
+        private ToolRegistry toolRegistry;
+
+        @Mock
         private org.springframework.core.io.Resource systemPromptResource;
 
         private AgentService agentService;
 
         @BeforeEach
         void setUp() {
-                agentService = new AgentService(agentPlanner, shortTermMemory, systemPromptResource);
+                agentService = new AgentService(agentPlanner, shortTermMemory, toolRegistry, systemPromptResource);
         }
 
         @Test
