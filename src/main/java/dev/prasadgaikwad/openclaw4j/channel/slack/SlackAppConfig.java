@@ -4,6 +4,7 @@ import com.slack.api.bolt.App;
 import com.slack.api.bolt.AppConfig;
 import com.slack.api.bolt.jakarta_servlet.SlackAppServlet;
 import com.slack.api.methods.MethodsClient;
+import com.slack.api.model.event.AppMentionEvent;
 import com.slack.api.model.event.MessageEvent;
 import dev.prasadgaikwad.openclaw4j.agent.AgentService;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
@@ -18,6 +19,10 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Spring configuration that wires up the Slack Bolt SDK with the OpenClaw4J
@@ -73,6 +78,13 @@ public class SlackAppConfig {
 
     private static final Logger log = LoggerFactory.getLogger(SlackAppConfig.class);
 
+    // Cache to prevent duplicate processing of retried events.
+    // In a production app, use a proper cache with TTL (e.g. Caffeine or Redis).
+    private final Set<String> processedEvents = ConcurrentHashMap.newKeySet();
+
+    // Executor for processing agent tasks asynchronously.
+    private final ExecutorService executor = Executors.newFixedThreadPool(10);
+
     /**
      * Creates and configures the Slack Bolt {@code App} with event handlers.
      *
@@ -111,47 +123,58 @@ public class SlackAppConfig {
             return ctx.ack(":wave: Hello! Today is a good day to start something new.");
         });
 
-        // ─────────────────────────────────────────────
-        // Register event handler: message
-        // ─────────────────────────────────────────────
-        // This handler fires for every message in channels where the bot is a member.
-        // We use Java's pattern matching and functional style to process events.
         app.event(MessageEvent.class, (payload, ctx) -> {
-            var event = payload.getEvent();
+            return ctx.ack();
+        });
 
-            // IMPORTANT: Ignore messages from bots (including ourselves!) to prevent
-            // infinite echo loops. Slack sets subtype="bot_message" for bot messages.
-            if (event.getSubtype() != null) {
-                log.debug("Ignoring message with subtype={}", event.getSubtype());
+        // ─────────────────────────────────────────────
+        // Register event handler: app_mention
+        // ─────────────────────────────────────────────
+        // This handler fires only when the bot is explicitly mentioned (@bot).
+        app.event(AppMentionEvent.class, (payload, ctx) -> {
+            var event = payload.getEvent();
+            var eventId = payload.getEventId();
+
+            // Deduplicate: If we've already seen this event_id, ignore it.
+            if (!processedEvents.add(eventId)) {
+                log.info("Ignoring duplicate Slack event: {}", eventId);
                 return ctx.ack();
             }
 
-            log.info("Received Slack message from user={} in channel={}",
-                    event.getUser(), event.getChannel());
+            log.info("Received Slack mention from user={} in channel={}, eventId={}",
+                    event.getUser(), event.getChannel(), eventId);
 
-            // ─────────────────────────────────────────
-            // Step 1: Normalize — Convert Slack event → InboundMessage
-            // This is the Adapter Pattern in action: translating from a
-            // platform-specific type to our normalized domain type.
-            // ─────────────────────────────────────────
-            var inboundMessage = new InboundMessage(
-                    event.getChannel(),
-                    Optional.ofNullable(event.getThreadTs()),
-                    event.getUser(),
-                    event.getText(),
-                    new ChannelType.Slack(event.getTeam() != null ? event.getTeam() : ""),
-                    parseSlackTimestamp(event.getTs()),
-                    Map.of("slackTs", event.getTs() != null ? event.getTs() : ""));
+            // PROCESS ASYNCHRONOUSLY
+            // Slack requires an ack within 3 seconds. LLM calls often take longer.
+            // By moving the work to an executor, we can ack immediately.
+            executor.submit(() -> {
+                try {
+                    // ─────────────────────────────────────────
+                    // Step 1: Normalize — Convert Slack event → InboundMessage
+                    // ─────────────────────────────────────────
+                    var inboundMessage = new InboundMessage(
+                            event.getChannel(),
+                            Optional.ofNullable(event.getThreadTs()),
+                            event.getUser(),
+                            event.getText(),
+                            new ChannelType.Slack(event.getTeam() != null ? event.getTeam() : ""),
+                            parseSlackTimestamp(event.getTs()),
+                            Map.of("slackTs", event.getTs() != null ? event.getTs() : ""));
 
-            // ─────────────────────────────────────────
-            // Step 2: Process — Delegate to the agent service
-            // ─────────────────────────────────────────
-            var outboundMessage = agentService.process(inboundMessage);
+                    // ─────────────────────────────────────────
+                    // Step 2: Process — Delegate to the agent service
+                    // ─────────────────────────────────────────
+                    var outboundMessage = agentService.process(inboundMessage);
 
-            // ─────────────────────────────────────────
-            // Step 3: Respond — Send the response back via the channel adapter
-            // ─────────────────────────────────────────
-            channelAdapter.sendMessage(outboundMessage);
+                    // ─────────────────────────────────────────
+                    // Step 3: Respond — Send the response back via the channel adapter
+                    // ─────────────────────────────────────────
+                    channelAdapter.sendMessage(outboundMessage);
+
+                } catch (Exception e) {
+                    log.error("Error processing async Slack event", e);
+                }
+            });
 
             // Acknowledge the event. Slack requires this within 3 seconds.
             return ctx.ack();
