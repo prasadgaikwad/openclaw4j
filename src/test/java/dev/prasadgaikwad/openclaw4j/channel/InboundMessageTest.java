@@ -1,7 +1,11 @@
 package dev.prasadgaikwad.openclaw4j.channel;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
 import java.util.Map;
@@ -69,42 +73,62 @@ class InboundMessageTest {
         assertEquals(Optional.empty(), message.threadId());
     }
 
-    @Test
-    @DisplayName("Should reject null or blank channelId")
-    void shouldRejectNullChannelId() {
-        assertThrows(IllegalArgumentException.class, () -> new InboundMessage(null, Optional.empty(), "U67890", "Hello",
-                new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
+    @Nested
+    @DisplayName("Validation Tests")
+    class ValidationTests {
 
-        assertThrows(IllegalArgumentException.class, () -> new InboundMessage("  ", Optional.empty(), "U67890", "Hello",
-                new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = { " ", "\t", "\n" })
+        @DisplayName("Should reject null or blank channelId")
+        void shouldRejectInvalidChannelId(String invalidId) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new InboundMessage(invalidId, Optional.empty(), "U67890", "Hello",
+                            new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = { " ", "\t", "\n" })
+        @DisplayName("Should reject null or blank userId")
+        void shouldRejectInvalidUserId(String invalidId) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new InboundMessage("C12345", Optional.empty(), invalidId, "Hello",
+                            new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
+        }
+
+        @Test
+        @DisplayName("Should reject null content")
+        void shouldRejectNullContent() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new InboundMessage("C12345", Optional.empty(), "U67890", null,
+                            new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
+        }
+
+        @Test
+        @DisplayName("Should reject null source channel type")
+        void shouldRejectNullSource() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
+                            null, Instant.now(), Map.of()));
+        }
     }
 
-    @Test
-    @DisplayName("Should reject null userId")
-    void shouldRejectNullUserId() {
-        assertThrows(IllegalArgumentException.class, () -> new InboundMessage("C12345", Optional.empty(), null, "Hello",
-                new ChannelType.Slack("T11111"), Instant.now(), Map.of()));
-    }
+    @Nested
+    @DisplayName("Equality and Immutability Tests")
+    class EqualityTests {
+        @Test
+        @DisplayName("Records should support value-based equality")
+        void shouldSupportValueEquality() {
+            var now = Instant.now();
+            var msg1 = new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
+                    new ChannelType.Slack("T11111"), now, Map.of());
+            var msg2 = new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
+                    new ChannelType.Slack("T11111"), now, Map.of());
 
-    @Test
-    @DisplayName("Should reject null source channel type")
-    void shouldRejectNullSource() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
-                        null, Instant.now(), Map.of()));
-    }
-
-    @Test
-    @DisplayName("Records should support value-based equality")
-    void shouldSupportValueEquality() {
-        var now = Instant.now();
-        var msg1 = new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
-                new ChannelType.Slack("T11111"), now, Map.of());
-        var msg2 = new InboundMessage("C12345", Optional.empty(), "U67890", "Hello",
-                new ChannelType.Slack("T11111"), now, Map.of());
-
-        // Records provide structural equality out of the box
-        assertEquals(msg1, msg2);
-        assertEquals(msg1.hashCode(), msg2.hashCode());
+            // Records provide structural equality out of the box
+            assertEquals(msg1, msg2);
+            assertEquals(msg1.hashCode(), msg2.hashCode());
+        }
     }
 }
