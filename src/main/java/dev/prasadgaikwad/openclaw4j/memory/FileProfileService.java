@@ -93,6 +93,27 @@ public class FileProfileService implements ProfileService {
         }
     }
 
+    @Override
+    public void updateSoul(String soulContent) {
+        try {
+            Files.writeString(SOUL_MD, soulContent);
+            log.info("Updated agent soul definition");
+        } catch (IOException e) {
+            log.error("Failed to update SOUL.md", e);
+        }
+    }
+
+    @Override
+    public void updateEnvironmentFact(String fact) {
+        try {
+            String entry = String.format("- %s\n", fact);
+            Files.writeString(TOOLS_MD, entry, java.nio.file.StandardOpenOption.APPEND);
+            log.info("Updated environment fact: {}", fact);
+        } catch (IOException e) {
+            log.error("Failed to update TOOLS.md", e);
+        }
+    }
+
     private String parseFirstValue(Path path, String prefix) throws IOException {
         return Files.readAllLines(path).stream()
                 .filter(line -> line.startsWith(prefix))

@@ -28,4 +28,18 @@ public interface ProfileService {
      * @param value the preference value
      */
     void updatePreference(String key, String value);
+
+    /**
+     * Updates the agent's soul definition (SOUL.md).
+     *
+     * @param soulContent the new personality or soul content
+     */
+    void updateSoul(String soulContent);
+
+    /**
+     * Updates the environment facts (TOOLS.md).
+     *
+     * @param fact the environmental fact to add or update
+     */
+    void updateEnvironmentFact(String fact);
 }

@@ -61,6 +61,7 @@ public class AgentPlanner {
      * @return the generated response text, which may be the result of multiple tool
      *         calls
      */
+    @SuppressWarnings("null")
     public String plan(AgentContext context) {
         logger.debug("Planning response for context with {} history messages", context.conversationHistory().size());
 

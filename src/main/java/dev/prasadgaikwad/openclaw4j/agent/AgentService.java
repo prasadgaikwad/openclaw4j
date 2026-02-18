@@ -82,6 +82,7 @@ public class AgentService {
      * @param message the normalized inbound message from any channel
      * @return the agent's response, ready to be sent back via the channel adapter
      */
+    @SuppressWarnings("null")
     public OutboundMessage process(InboundMessage message) {
         log.info("Processing message from user={} in channel={}: {}",
                 message.userId(), message.channelId(), truncate(message.content(), 100));
