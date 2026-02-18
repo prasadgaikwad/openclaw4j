@@ -3,6 +3,8 @@ package dev.prasadgaikwad.openclaw4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 /**
  * Entry point for the OpenClaw4J autonomous agent.
  *
@@ -36,6 +38,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @see <a href="docs/README.md">README.md</a>
  * @see <a href="docs/PRD.md">Product Requirements Document</a>
  */
+@EnableScheduling
 @SpringBootApplication
 public class OpenClaw4JApplication {
 

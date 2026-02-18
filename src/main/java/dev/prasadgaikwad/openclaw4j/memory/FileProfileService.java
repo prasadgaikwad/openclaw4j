@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,7 +87,7 @@ public class FileProfileService implements ProfileService {
     public void updatePreference(String key, String value) {
         try {
             String entry = String.format("- %s: %s\n", key, value);
-            Files.writeString(USER_MD, entry, java.nio.file.StandardOpenOption.APPEND);
+            Files.writeString(USER_MD, entry, StandardOpenOption.APPEND);
             log.info("Updated user preference: {} = {}", key, value);
         } catch (IOException e) {
             log.error("Failed to update preferences in USER.md", e);
@@ -107,7 +108,7 @@ public class FileProfileService implements ProfileService {
     public void updateEnvironmentFact(String fact) {
         try {
             String entry = String.format("- %s\n", fact);
-            Files.writeString(TOOLS_MD, entry, java.nio.file.StandardOpenOption.APPEND);
+            Files.writeString(TOOLS_MD, entry, StandardOpenOption.APPEND);
             log.info("Updated environment fact: {}", fact);
         } catch (IOException e) {
             log.error("Failed to update TOOLS.md", e);

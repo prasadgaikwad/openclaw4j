@@ -18,12 +18,16 @@ spring:
         enabled: false
         options:
           model: gpt-4o
+      embedding:
+        enabled: false
     ollama:
       base-url: http://localhost:11434
       chat:
         enabled: false
         options:
           model: kimi-k2-thinking:cloud
+      embedding:
+        enabled: false
     mcp:
       client:
         stdio:
@@ -35,6 +39,17 @@ spring:
                 - "@modelcontextprotocol/server-github"
               env:
                 GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN:}
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536 # Default for OpenAI, will be overridden by model choice
+  
+  datasource:
+    url: ${JDBC_URL:jdbc:postgresql://localhost:5432/openclaw4j}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
 
 server:
   port: 8080
@@ -89,6 +104,8 @@ spring:
     openai:
       chat:
         enabled: true
+      embedding:
+        enabled: true
 
 ---
 # ─────────────────────────────────────────────
@@ -101,4 +118,6 @@ spring:
   ai:
     ollama:
       chat:
+        enabled: true
+      embedding:
         enabled: true

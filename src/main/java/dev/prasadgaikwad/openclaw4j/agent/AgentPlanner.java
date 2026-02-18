@@ -87,6 +87,14 @@ public class AgentPlanner {
             fullSystemPrompt.append("\n\n### Soul Directive:\n").append(d).append("\n");
         });
 
+        // Append RAG Documents (Slice 5)
+        if (context.ragDocuments() != null && !context.ragDocuments().isEmpty()) {
+            fullSystemPrompt.append("\n\n### Relevant Knowledge (from history/docs):\n");
+            context.ragDocuments().forEach(doc -> {
+                fullSystemPrompt.append("- ").append(doc.getText()).append("\n");
+            });
+        }
+
         messages.add(new SystemMessage(fullSystemPrompt.toString()));
 
         // Add history

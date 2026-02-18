@@ -264,9 +264,9 @@ gantt
     Memory recall in agent context                :s4c, after s4b, 3d
 
     section Slice 5 — RAG
-    Channel message indexer                       :s5a, after s4c, 3d
-    Vector store integration                      :s5b, after s5a, 3d
-    RAG-augmented agent responses                 :s5c, after s5b, 3d
+    Channel message indexer                       :done, s5a, after s4c, 3d
+    Vector store integration                      :done, s5b, after s5a, 3d
+    RAG-augmented agent responses                 :done, s5c, after s5b, 3d
 
     section Slice 6 — Scheduler
     Reminder engine (cron-based)                  :s6a, after s5c, 3d

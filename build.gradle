@@ -51,6 +51,10 @@ dependencies {
 
     implementation 'org.springframework.ai:spring-ai-starter-mcp-client'
 
+    // Vector Store & PGVector
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+    runtimeOnly 'org.postgresql:postgresql'
+
     // ─────────────────────────────────────────────
     // Testing
     // ─────────────────────────────────────────────

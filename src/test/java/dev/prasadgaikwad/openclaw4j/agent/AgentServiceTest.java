@@ -42,12 +42,15 @@ class AgentServiceTest {
         @Mock
         private ToolRegistry toolRegistry;
 
+        @Mock
+        private dev.prasadgaikwad.openclaw4j.rag.RAGService ragService;
+
         private AgentService agentService;
 
         @BeforeEach
         void setUp() {
                 agentService = new AgentService(agentPlanner, shortTermMemory, memoryService, profileService,
-                                toolRegistry);
+                                toolRegistry, ragService);
         }
 
         @Test
@@ -66,6 +69,7 @@ class AgentServiceTest {
                 var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
                 when(profileService.getProfile()).thenReturn(profile);
                 when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
+                when(ragService.findRelevantDocuments(anyString())).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Hello, User! I am OpenClaw4J.");
 
@@ -100,6 +104,7 @@ class AgentServiceTest {
                 var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
                 when(profileService.getProfile()).thenReturn(profile);
                 when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
+                when(ragService.findRelevantDocuments(anyString())).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Thread reply");
 
