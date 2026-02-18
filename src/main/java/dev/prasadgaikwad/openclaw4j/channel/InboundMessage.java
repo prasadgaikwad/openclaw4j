@@ -5,43 +5,39 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * A normalized, immutable representation of a message received from any
- * channel.
- *
- * <h2>Java 25 Concept: Records</h2>
- * <p>
- * Records are a special kind of class that act as transparent carriers for
- * immutable data. The compiler automatically generates:
- * </p>
- * <ul>
- * <li>A canonical constructor</li>
- * <li>Accessor methods for each component (e.g., {@code channelId()})</li>
- * <li>{@code equals()}, {@code hashCode()}, and {@code toString()}</li>
- * </ul>
- *
- * <h2>Design Rationale</h2>
- * <p>
- * Every channel (Slack, Discord, WhatsApp) produces different event formats.
- * The channel adapter normalizes these into an {@code InboundMessage}, creating
- * a uniform interface for the agent core. This is the <strong>Adapter
- * Pattern</strong>
- * — translating a platform-specific interface into a common one.
- * </p>
+ * A normalized, platform-neutral representation of a message received from any
+ * communication channel.
  *
  * <p>
- * Using {@code Optional<String>} for {@code threadId} makes it explicit that
- * a message may or may not belong to a thread. This avoids null checks
- * scattered
- * across the codebase.
+ * This <b>record</b> acts as a transparent data carrier, normalizing various
+ * platform-specific
+ * event formats (Slack, Discord, Console) into a uniform structure that the
+ * agent core can process.
+ * This implementation follows the <b>Adapter Design Pattern</b>.
  * </p>
  *
- * @param channelId the channel/conversation identifier (platform-specific)
+ * <h3>Example Construction:</h3>
+ * 
+ * <pre>
+ * InboundMessage msg = new InboundMessage(
+ *         "C123456",
+ *         Optional.of("T7890"),
+ *         "U999",
+ *         "Fetch the latest logs",
+ *         new ChannelType.Slack("T111"),
+ *         Instant.now(),
+ *         Map.of("event_id", "Ev123"));
+ * </pre>
+ *
+ * @param channelId the channel or conversation identifier (platform-specific)
  * @param threadId  the thread identifier, if this message is part of a thread
  * @param userId    the user who sent the message
  * @param content   the text content of the message
  * @param source    which channel type this message came from
  * @param timestamp when the message was received
- * @param metadata  additional platform-specific data (e.g., Slack's event_id)
+ * @param metadata  additional platform-specific metadata
+ *
+ * @author Prasad Gaikwad
  */
 public record InboundMessage(
         String channelId,

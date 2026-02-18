@@ -1,7 +1,7 @@
 # Slice 3 — Learning Guide: Tools (MCP)
 
-> **What you built:** An agent that doesn't just talk, but *acts*. It can now create GitHub issues and interact with Slack history.
-> **Concepts covered:** Model Context Protocol (MCP), Spring AI `@Tool` annotation, and Function Calling (Tooling).
+> **What you built:** An agent that doesn't just talk, but *acts*. It can now interact with external tools discovered from MCP servers (like GitHub).
+> **Concepts covered:** Model Context Protocol (MCP), `ToolCallbackProvider`, `ToolCallAdvisor`, and the automatic tool execution loop.
 
 ---
 
@@ -10,79 +10,84 @@
 ### 1.1 What are Tools?
 In LLM terms, **Tools** (or Functions) are external capabilities that the model can choose to invoke. The model doesn't "run" the code itself; instead, it outputs a special "tool call" instruction, which your application executes, returning the result to the model.
 
-### 1.2 The `@Tool` Annotation
-Spring AI 1.1+ introduces a simplified way to define tools using the `@Tool` annotation on any bean method.
+### 1.2 MCP Servers
+Instead of writing every tool manually, we use **MCP (Model Context Protocol)** to connect to external "tool servers". For example, a GitHub MCP server provides tools for reading issues, creating PRs, etc., without requiring us to write the boilerplate.
 
-**Where in the code:** `GitHubTool`, `SlackTool`
+**Where in the code:** `application.yml` (MCP client config), `ToolRegistry`
 
-```java
-@Tool(description = "Creates a new issue in a GitHub repository")
-public String createGitHubIssue(String title, String body, String repo) {
-    // ... implementation ...
-}
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          servers:
+            github:
+              command: npx
+              args: ["-y", "@modelcontextprotocol/server-github"]
+              env:
+                GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN}
 ```
-
-**Key rules:**
-- **Description is Mandatory:** The LLM uses the description to decide *when* to use the tool.
-- **Parameters are Schematized:** Spring AI automatically generates a JSON Schema from your method parameters (names and types) to tell the LLM how to call it.
 
 ---
 
 ## 2. Tool Registry & Discovery
 
 ### 2.1 The ToolRegistry
-To keep the agent modular, we use a `ToolRegistry` to manage which tools are "visible" to the agent at any given time.
+The `ToolRegistry` now handles two types of tools:
+1.  **Local Tools**: Spring beans implementing the `AITool` marker interface.
+2.  **MCP Tools**: Tools dynamically discovered from MCP servers, provided as `ToolCallback` objects.
 
 **Where in the code:** `ToolRegistry`
 
 ```java
-public List<String> getAvailableToolNames() {
-    return List.of("gitHubTool", "slackTool");
+// Inside ToolRegistry constructor
+for (ToolCallbackProvider provider : mcpToolProviders) {
+    if (provider instanceof SyncMcpToolCallbackProvider) {
+        this.mcpTools.addAll(Arrays.asList(provider.getToolCallbacks()));
+    }
 }
 ```
-
-By returning bean names, we allow the `AgentPlanner` to dynamically attach these capabilities to specific LLM requests.
 
 ---
 
 ## 3. Tool Calling Workflow
 
-### 3.1 The Reasoning Loop (ReAct)
-When tools are enabled, the interaction with the LLM changes from a single request/response to a loop:
-1. **User:** "Create a bug report for the login issue."
-2. **LLM:** "I'll use `createGitHubIssue`. Parameters: {title: 'Login Issue', ...}"
-3. **Application:** Executes `gitHubTool.createGitHubIssue(...)`.
-4. **Application:** Sends the *result* back to the LLM.
-5. **LLM:** "Issue created! You can view it here: [link]"
-
-### 3.2 ChatClient Integration
-Using the fluent API, we enable tools per request using `.toolNames()`.
+### 3.1 The Automatic ReAct Loop
+When tools are enabled, the interaction changes from a single request/response to a loop. Spring AI 1.1.2 makes this automatic using the **`ToolCallAdvisor`**.
 
 **Where in the code:** `AgentPlanner`
 
 ```java
 chatClient.prompt()
+    .advisors(ToolCallAdvisor.builder().build()) // Enables the Thinking/Acting loop
     .messages(messages)
-    .toolNames(context.availableTools().toArray(new String[0]))
+    .tools(context.localTools().toArray())
+    .toolCallbacks(context.mcpTools())
     .call()
     .content();
 ```
+
+Without the advisor, the LLM might return a "tool call" but the application wouldn't know to execute it and send the answer back. The advisor automates this `Think -> Act -> Observe -> Think` cycle.
 
 ---
 
 ## 4. Troubleshooting
 
-### 4.1 "Method undefined" Errors
-Spring AI is evolving rapidly. Method names like `.functions()` vs `.toolNames()` vs `.tools()` can vary between version 1.0.0 and 1.1.2. 
-- In **1.1.2**, use `.toolNames()` for bean-based reference.
+### 4.1 Empty Response Error
+If an LLM decides to call a tool but doesn't provide any natural language text in its first response, the application might crash with `IllegalArgumentException: content must not be null or blank`.
 
-### 4.2 LLM "Hallucination" of Tools
-If the LLM tries to call a tool that doesn't exist, it usually means your descriptions are too vague or you haven't registered the bean name correctly in the `ChatClient` spec.
+**Solution:** 
+1.  Ensure `ToolCallAdvisor` is active so the loop completes.
+2.  Add a fallback in `AgentService` to handle cases where the LLM still returns an empty string after processing.
+
+### 4.2 Dependency Management
+Ensure the `spring-ai-starter-mcp-client` is in your `build.gradle` to enable MCP capabilities.
 
 ---
 
 ## 5. Exercises
 
-1. **Add a Calculator:** Create a `MathTool` with an `@Tool` annotated method for complex calculations and register it.
-2. **Restrict Tools:** Modify `AgentService` to only provide the `GitHubTool` if the message comes from a specific "admin" user ID.
-3. **Inspect the Loop:** Use a debugger or log point in `AgentPlanner` to see the `ChatResponse` before `.content()` is called. Look for `ToolCalls` in the message metadata.
+1. **Add a new MCP Server:** Add the `google-maps` or `brave-search` MCP server to `application.yml` and see if the agent can use it.
+2. **Local @Tool:** Create a new class with a method annotated with `@Tool` and see how it differs from MCP-based tools.
+3. **Inspect the advisor:** Debug `ToolCallAdvisor` to see how it intercepts the response and triggers the tool execution.

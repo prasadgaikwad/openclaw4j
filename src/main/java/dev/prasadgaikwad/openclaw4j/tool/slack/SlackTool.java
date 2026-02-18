@@ -13,7 +13,26 @@ import org.springframework.stereotype.Service;
 import java.util.stream.Collectors;
 
 /**
- * MCP Tool for interacting with Slack.
+ * A local tool enabling the agent to interact directly with Slack APIs.
+ *
+ * <p>
+ * While the {@link SlackChannelAdapter} handles regular message dispatch, this
+ * {@link AITool} provides the LLM with explicit capabilities to read channel
+ * results (history) or post status updates independently of the main response
+ * loop.
+ * </p>
+ *
+ * <h3>Usage in LLM Prompt (Implicit):</h3>
+ * <p>
+ * The model decides when to call {@link #getChannelHistory(String, Integer)} or
+ * {@link #postSlackMessage(String, String)} based on the tool descriptions
+ * provided
+ * in the {@code @Tool} annotations.
+ * </p>
+ *
+ * @author Prasad Gaikwad
+ * @see AITool
+ * @see MethodsClient
  */
 @Service
 public class SlackTool implements AITool {

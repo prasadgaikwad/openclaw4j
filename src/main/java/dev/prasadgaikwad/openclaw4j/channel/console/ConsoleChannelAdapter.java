@@ -18,20 +18,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * A local channel adapter that allows interacting with the agent via the
+ * A local channel adapter that enables direct interaction with the agent via
+ * the terminal.
+ *
+ * <p>
+ * This adapter implements a <b>REPL (Read-Eval-Print Loop)</b>, allowing
+ * developers to test
+ * agent logic without connecting to external platforms like Slack. It runs in a
+ * separate
+ * thread to avoid blocking the main application context startup.
+ * </p>
+ *
+ * <h3>Usage:</h3>
+ * <p>
+ * When the application starts, it will display a Lobster (🦞) prompt in the
  * terminal.
- *
- * <h2>Usage</h2>
- * <p>
- * This adapter runs a REPL (Read-Eval-Print Loop) on the standard input/output.
- * It is active only when the 'console' profile is active or simply by default
- * in this MVP if getting started easier.
+ * Simply type your message and press Enter.
  * </p>
  *
- * <p>
- * To prevent blocking the main thread (which might delay web server start),
- * we run the input loop in a separate thread.
- * </p>
+ * @author Prasad Gaikwad
+ * @see ChannelAdapter
+ * @see CommandLineRunner
  */
 @Component
 public class ConsoleChannelAdapter implements ChannelAdapter, CommandLineRunner {

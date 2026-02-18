@@ -4,27 +4,37 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A normalized, immutable representation of a message to be sent to a channel.
- *
- * <h2>Design Rationale</h2>
- * <p>
- * Just as {@link InboundMessage} normalizes incoming platform events,
- * {@code OutboundMessage} normalizes outgoing responses. The channel adapter
- * translates this common format into platform-specific API calls
- * (e.g., Slack's {@code chat.postMessage}).
- * </p>
+ * A normalized, platform-neutral representation of a message to be sent to a
+ * channel.
  *
  * <p>
- * This separation means the agent core never needs to know <em>how</em>
- * to send a Slack message — it just produces an {@code OutboundMessage},
- * and the adapter handles the rest.
+ * This record facilitates the <b>separation of concerns</b> between the agent
+ * core and the
+ * communication channels. The agent generates an {@code OutboundMessage}, and
+ * the
+ * appropriate {@link ChannelAdapter} handles its delivery to specific platform
+ * APIs.
  * </p>
  *
- * @param channelId   the target channel/conversation identifier
+ * <h3>Example Construction:</h3>
+ * 
+ * <pre>
+ * OutboundMessage msg = OutboundMessage.textReply(
+ *         "C12345",
+ *         Optional.of("T6789"),
+ *         "Hello from OpenClaw4J!",
+ *         new ChannelType.Slack("T111"));
+ * </pre>
+ *
+ * @param channelId   the target channel or conversation identifier (e.g., Slack
+ *                    ID)
  * @param threadId    the thread to reply in, if applicable
  * @param content     the text content to send
- * @param destination which channel type to send to
- * @param attachments optional list of attachment descriptions
+ * @param destination which channel type to send to (e.g.,
+ *                    {@link ChannelType.Slack})
+ * @param attachments optional list of attachment identifiers or descriptions
+ *
+ * @author Prasad Gaikwad
  */
 public record OutboundMessage(
         String channelId,

@@ -20,37 +20,34 @@ import java.util.Optional;
 /**
  * The central orchestrator of the OpenClaw4J agent.
  *
- * <h2>Responsibility</h2>
  * <p>
- * This service receives a normalized {@link InboundMessage}, processes it,
- * and returns a normalized {@link OutboundMessage}. It is the single entry
- * point
- * for all agent logic, regardless of which channel the message came from.
+ * This service acts as the primary "brain" that receives a platform-neutral
+ * {@link InboundMessage},
+ * coordinates with {@link ShortTermMemory} to retrieve conversation context,
+ * assembles
+ * an {@link AgentContext}, and delegates reasoning to the {@link AgentPlanner}.
+ * The result is returned as an {@link OutboundMessage}.
  * </p>
  *
- * <h2>MVP Slice 2: Intelligence</h2>
  * <p>
- * In this slice, the agent uses {@link AgentPlanner} and Spring AI to generate
- * intelligent responses based on conversation history and a system prompt.
- * The simple echo behavior from Slice 1 has been replaced.
+ * It provides a channel-agnostic processing pipeline, allowing the agent to
+ * function
+ * identically across Slack, Console, or any other supported communication
+ * platform.
  * </p>
  *
- * <h2>Functional Style</h2>
- * <p>
- * The processing pipeline is expressed as a
- * {@code Function<InboundMessage, OutboundMessage>}.
- * This makes the agent's behavior composable and testable — you can swap the
- * processing function without changing the service's structure.
- * </p>
+ * <h3>Usage Example:</h3>
+ * 
+ * <pre>
+ * InboundMessage message = SlackChannelAdapter.normalize(event);
+ * OutboundMessage response = agentService.process(message);
+ * slackAdapter.reply(response);
+ * </pre>
  *
- * <h2>Future Slices</h2>
- * <ul>
- * <li><strong>Slice 3</strong>: Add MCP tool orchestration</li>
- * <li><strong>Slice 4</strong>: Inject memory context before processing</li>
- * </ul>
- *
+ * @author Prasad Gaikwad
  * @see InboundMessage
  * @see OutboundMessage
+ * @see AgentPlanner
  */
 @Service
 public class AgentService {
@@ -121,10 +118,18 @@ public class AgentService {
                 memorySnapshot,
                 Collections.emptyList(),
                 profile,
-                toolRegistry.getTools());
+                toolRegistry.getLocalTools(),
+                toolRegistry.getMcpTools());
 
         // 4. Plan and Generate Response
         String responseText = agentPlanner.plan(context);
+
+        // Fallback for empty responses to avoid IllegalArgumentException in
+        // OutboundMessage
+        if (responseText == null || responseText.isBlank()) {
+            log.warn("Agent generated an empty response. Using fallback message.");
+            responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
+        }
 
         // 5. Update Short-Term Memory
         // Add User Message

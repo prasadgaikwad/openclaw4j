@@ -124,14 +124,14 @@ openclaw4j/
 │   └── learning/                        # Learning guides per slice
 │
 ├── src/main/java/dev/prasadgaikwad/openclaw4j/
-│   ├── OpenClaw4jApplication.java       # Entry point
+│   ├── OpenClaw4JApplication.java       # Entry point
 │   ├── channel/                         # Channel adapters (Slack, Console)
 │   │   ├── ChannelAdapter.java          # Sealed interface
 │   │   └── slack/                       # Slack implementation
 │   ├── agent/                           # Agent core (planner, service, context)
 │   ├── config/                          # Configuration (AIConfig, SlackAppConfig)
 │   ├── memory/                          # Memory management (ShortTermMemory)
-│   ├── tool/                            # Tool System (ToolRegistry, GitHubTool, SlackTool)
+│   ├── tool/                            # Tool System (ToolRegistry, AITool)
 │   └── util/                            # Utilities
 │
 ├── src/main/resources/
@@ -145,7 +145,7 @@ openclaw4j/
 │   ├── TOOLS.md                         # Environment & tool notes
 │   └── heartbeat-state.json             # Scheduler state
 │
-└── build.gradle.kts
+└── build.gradle
 ```
 
 ## Memory System
@@ -171,15 +171,15 @@ graph TD
 
 ## MVP Roadmap
 
-| Slice | Name | Goal |
-|-------|------|------|
-| **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter (Done) |
-| **MVP-2** | Intelligence | LLM-powered responses with conversation history (Done) |
-| **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) (Done) |
-| **MVP-4** | Memory | Persistent layered memory system |
-| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval |
-| **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks |
-| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter |
+| Slice | Name | Goal | Status |
+|-------|------|------|--------|
+| **MVP-1** | Foundation | Echo bot on Slack — project scaffold, channel adapter | Done |
+| **MVP-2** | Intelligence | LLM-powered responses with conversation history | Done |
+| **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) | Done |
+| **MVP-4** | Memory | Persistent layered memory system | In Progress |
+| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Next |
+| **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Next |
+| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Next |
 
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
 
@@ -191,6 +191,7 @@ graph TD
 
 - Java 25+
 - Gradle 8+
+- Node.js (for npx-based MCP servers)
 - PostgreSQL 16+ (for PGVector)
 - A Slack workspace with bot permissions
 - An LLM API key (OpenAI, Anthropic, or Ollama)

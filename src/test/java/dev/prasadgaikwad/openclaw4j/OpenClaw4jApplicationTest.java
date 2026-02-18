@@ -40,7 +40,7 @@ import org.springframework.test.context.TestPropertySource;
         "openclaw4j.channel.slack.signing-secret=test-signing-secret",
         "spring.ai.openai.api-key=test"
 })
-class OpenClaw4jApplicationTest {
+class OpenClaw4JApplicationTest {
 
     @Test
     @DisplayName("Application context should load successfully")

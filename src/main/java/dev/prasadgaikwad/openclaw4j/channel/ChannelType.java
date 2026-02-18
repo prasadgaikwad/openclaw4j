@@ -3,42 +3,34 @@ package dev.prasadgaikwad.openclaw4j.channel;
 /**
  * Represents the type of messaging channel the agent is communicating through.
  *
- * <h2>Java 25 Concept: Sealed Interfaces</h2>
  * <p>
- * A sealed interface restricts which classes can implement it. This gives us
- * <strong>exhaustive pattern matching</strong> — the compiler knows all
- * possible
- * subtypes, so a {@code switch} expression can cover all cases without a
- * default branch.
+ * This <b>sealed interface</b> defines the set of supported channel types in
+ * OpenClaw4J.
+ * By using a sealed structure, we enable <b>exhaustive pattern matching</b> (a
+ * Java 21+ feature),
+ * ensuring that the compiler verifies all possible channel types are handled in
+ * {@code switch}
+ * expressions or {@code if} chains using pattern matching.
  * </p>
  *
- * <h2>Java 25 Concept: Records as Sealed Permits</h2>
  * <p>
- * Each channel type is a {@code record} — an immutable, transparent data
- * carrier.
- * Records automatically provide {@code equals()}, {@code hashCode()}, and
- * {@code toString()}.
- * Combined with sealed interfaces, we get a type-safe, exhaustive union type.
+ * Each permitted implementation is a {@code record}, providing an immutable,
+ * type-safe
+ * way to carry channel-specific metadata (like workspace IDs or phone numbers).
  * </p>
  *
- * <h2>Design Rationale</h2>
- * <p>
- * By sealing the channel types, we ensure that adding a new channel (e.g.,
- * WhatsApp)
- * forces us to handle it everywhere channels are pattern-matched. The compiler
- * catches any missed cases at build time, not at runtime.
- * </p>
- *
- * <h3>Usage example with pattern matching:</h3>
+ * <h3>Switch Expression Example:</h3>
  * 
- * <pre>{@code
- * String label = switch (channelType) {
- *     case Slack slack -> "Slack workspace";
- *     case Discord discord -> "Discord server";
- *     case WhatsApp wa -> "WhatsApp chat";
+ * <pre>
+ * String description = switch (channelType) {
+ *     case ChannelType.Slack(var id) -&gt; "Slack Workspace: " + id;
+ *     case ChannelType.Console() -&gt; "Local Terminal";
+ *     case ChannelType.Discord(var id) -&gt; "Discord Guild: " + id;
+ *     case ChannelType.WhatsApp(var id) -&gt; "WhatsApp Number: " + id;
  * };
- * }</pre>
+ * </pre>
  *
+ * @author Prasad Gaikwad
  * @see InboundMessage
  * @see OutboundMessage
  */

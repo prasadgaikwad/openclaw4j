@@ -24,6 +24,17 @@ spring:
         enabled: false
         options:
           model: kimi-k2-thinking:cloud
+    mcp:
+      client:
+        stdio:
+          connections:
+            github:
+              command: npx
+              args:
+                - "-y"
+                - "@modelcontextprotocol/server-github"
+              env:
+                GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN:}
 
 server:
   port: 8080

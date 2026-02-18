@@ -8,13 +8,27 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * AI Configuration to handle multiple LLM providers.
+ * AI Configuration to handle multiple LLM providers (OpenAI, Ollama, etc.).
+ *
+ * <p>
+ * This configuration class uses {@code @ConditionalOnProperty} to dynamically
+ * instantiate
+ * the appropriate {@link ChatClient} based on the application's configuration.
+ * This allows
+ * for seamless switching between cloud-based providers (like OpenAI) and
+ * local-hosted ones
+ * (like Ollama) depending on the environment or user preference.
+ * </p>
+ *
+ * <h3>Example configuration in application.yml:</h3>
  * 
- * We use @ConditionalOnProperty to decide which ChatClient bean to create.
- * By specifying the concrete model type (e.g., OpenAiChatModel) in the
- * parameter,
- * we avoid NoUniqueBeanDefinitionException even if multiple starters are
- * active.
+ * <pre>
+ * openclaw4j:
+ *   ai:
+ *     provider: openai # Switch to 'ollama' for local execution
+ * </pre>
+ *
+ * @author Prasad Gaikwad
  */
 @Configuration
 public class AIConfig {

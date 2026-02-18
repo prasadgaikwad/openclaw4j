@@ -5,6 +5,7 @@ import com.slack.api.bolt.AppConfig;
 import com.slack.api.bolt.jakarta_servlet.SlackAppServlet;
 import com.slack.api.methods.MethodsClient;
 import com.slack.api.model.event.AppMentionEvent;
+import com.slack.api.model.event.MessageChangedEvent;
 import com.slack.api.model.event.MessageEvent;
 import dev.prasadgaikwad.openclaw4j.agent.AgentService;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
@@ -25,50 +26,35 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Spring configuration that wires up the Slack Bolt SDK with the OpenClaw4J
- * agent.
+ * Spring configuration class that integrates the Slack Bolt SDK with the
+ * OpenClaw4J agent.
  *
- * <h2>How Slack Bolt Works</h2>
  * <p>
- * Slack Bolt is an event-driven framework for building Slack apps. Here's the
- * flow:
+ * This class is responsible for:
  * </p>
- * <ol>
- * <li>Slack sends an HTTP POST to your app's webhook URL when events occur</li>
- * <li>Bolt automatically <strong>verifies the request signature</strong> using
- * the signing secret (prevents spoofing)</li>
- * <li>Bolt <strong>parses the event payload</strong> and dispatches it to
- * the matching handler</li>
- * <li>Your handler processes the event and calls {@code ctx.ack()} to
- * acknowledge receipt within 3 seconds (Slack's requirement)</li>
- * </ol>
- *
- * <h2>Spring Boot Integration</h2>
- * <p>
- * We register the Bolt {@code App} as a servlet at {@code /slack/events}.
- * Spring Boot's embedded Tomcat serves this servlet alongside the normal
- * Spring MVC endpoints (like Actuator).
- * </p>
- *
- * <h2>Jakarta EE Note</h2>
- * <p>
- * Spring Boot 4.0.2 uses Jakarta EE 11 (package {@code jakarta.servlet.*}).
- * We use {@code bolt-jakarta-servlet} instead of {@code bolt-servlet} to ensure
- * compatibility. This is a common migration concern when upgrading to Spring
- * Boot 4.x.
- * </p>
- *
- * <h2>Key Concepts</h2>
  * <ul>
- * <li><strong>App</strong> — the Bolt application instance; holds all event
- * handlers</li>
- * <li><strong>AppConfig</strong> — configuration (tokens, signing secret)</li>
- * <li><strong>SlackAppServlet</strong> — adapts the Bolt App to the Jakarta
- * Servlet API</li>
- * <li><strong>ctx.ack()</strong> — acknowledges the event; must be called
- * within 3 seconds</li>
+ * <li>Configuring the Bolt {@link App} with security (Signing Secret) and
+ * identity (Bot Token).</li>
+ * <li>Registering event handlers (Mentions, Messages) and Slash Commands
+ * ({@code /go}).</li>
+ * <li>Managing an {@link ExecutorService} for asynchronous event processing,
+ * ensuring
+ * compliance with Slack's 3-second acknowledgement (ack) requirement while
+ * performing
+ * long-running LLM tasks.</li>
+ * <li>Deduplicating incoming events using a thread-safe set.</li>
+ * <li>Exposing the {@link MethodsClient} as a Spring bean for outbound
+ * messaging.</li>
  * </ul>
  *
+ * <h3>Usage Example (Implicit via Spring Boot):</h3>
+ * <p>
+ * This configuration is automatically picked up by Spring Boot. Ensure that
+ * {@code SLACK_BOT_TOKEN} and {@code SLACK_SIGNING_SECRET} are provided in your
+ * environment or {@code application.yml}.
+ * </p>
+ *
+ * @author Prasad Gaikwad
  * @see <a href="https://slack.dev/java-slack-sdk/guides/bolt-basics">Bolt for
  *      Java Guide</a>
  */
@@ -119,11 +105,28 @@ public class SlackAppConfig {
 
         var app = new App(appConfig);
 
+        // ─────────────────────────────────────────────
+        // Register command: /go
+        // ─────────────────────────────────────────────
+        // This handler fires when a user types "/go" in a channel.
         app.command("/go", (req, ctx) -> {
             return ctx.ack(":wave: Hello! Today is a good day to start something new.");
         });
 
+        // ─────────────────────────────────────────────
+        // Register event handler: message
+        // ─────────────────────────────────────────────
+        // This handler fires whenever a message is posted in a channel where the bot
+        // is present.
         app.event(MessageEvent.class, (payload, ctx) -> {
+            return ctx.ack();
+        });
+
+        // ─────────────────────────────────────────────
+        // Register event handler: message_changed
+        // ─────────────────────────────────────────────
+        // This handler fires when a message is edited.
+        app.event(MessageChangedEvent.class, (payload, ctx) -> {
             return ctx.ack();
         });
 

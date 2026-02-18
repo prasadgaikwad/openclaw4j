@@ -10,6 +10,25 @@ import org.springframework.stereotype.Component;
 
 import dev.prasadgaikwad.openclaw4j.tool.AITool;
 
+/**
+ * A local tool providing date and time information.
+ *
+ * <p>
+ * This tool allows the agent to regain "temporal awareness" by retrieving the
+ * current
+ * system time, adjusted for the user's locale/timezone where possible.
+ * </p>
+ *
+ * <h3>Usage in LLM Prompt (Implicit):</h3>
+ * <p>
+ * The model will invoke {@link #getCurrentDateTime()} when the user asks
+ * questions like
+ * "What time is it?" or "What's today's date?".
+ * </p>
+ *
+ * @author Prasad Gaikwad
+ * @see AITool
+ */
 @Component
 public class DateTimeTools implements AITool {
     private static final Logger logger = LoggerFactory.getLogger(DateTimeTools.class);

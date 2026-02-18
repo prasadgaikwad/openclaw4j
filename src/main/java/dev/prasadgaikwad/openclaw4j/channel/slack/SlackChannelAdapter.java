@@ -13,31 +13,30 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Slack implementation of the {@link ChannelAdapter} sealed interface.
+ * Slack-specific implementation of the {@link ChannelAdapter} interface.
  *
- * <h2>Responsibility</h2>
  * <p>
- * This adapter handles <strong>outbound</strong> message delivery to Slack.
- * Inbound messages are handled by the Bolt {@code App} event handlers
- * configured in {@link SlackAppConfig}.
+ * This adapter manages <b>outbound</b> communication by translating normalized
+ * {@link OutboundMessage} records into Slack-specific {@code chat.postMessage}
+ * API calls
+ * using the {@link MethodsClient}.
  * </p>
  *
- * <h2>Why Separate Inbound and Outbound?</h2>
  * <p>
- * Slack's Bolt SDK uses an event-driven model for inbound messages — you
- * register handlers on the {@code App} object, and Bolt dispatches events to
- * them.
- * Outbound messages, however, use the imperative {@code MethodsClient} API.
- * Separating these concerns keeps each class focused.
+ * Note: <b>Inbound</b> Slack events (messages, mentions) are handled separately
+ * by
+ * Bolt event handlers configured in {@link SlackAppConfig}.
  * </p>
  *
- * <h2>Design Pattern: Adapter</h2>
- * <p>
- * This class adapts the normalized {@link OutboundMessage} into Slack's
- * {@code ChatPostMessageRequest}. The agent core never touches Slack's API
- * directly — it just produces an {@code OutboundMessage}.
- * </p>
+ * <h3>Usage Example:</h3>
+ * 
+ * <pre>
+ * // Sending a threaded reply
+ * OutboundMessage reply = OutboundMessage.textReply("C123", Optional.of("162..."), "Hi!", slackType);
+ * slackChannelAdapter.sendMessage(reply);
+ * </pre>
  *
+ * @author Prasad Gaikwad
  * @see ChannelAdapter
  * @see SlackAppConfig
  */

@@ -6,15 +6,35 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The planner responsible for generating a response or plan based on the agent
- * context.
- * Uses Spring AI's ChatClient to interact with the LLM.
+ * The orchestration component responsible for generating a response or plan
+ * based on the
+ * {@link AgentContext}.
+ *
+ * <p>
+ * This planner uses Spring AI's {@link ChatClient} to interact with the LLM. It
+ * coordinates
+ * the transformation of the current context into a series of messages (System,
+ * History, User)
+ * and leverages a {@link ToolCallAdvisor} to handle the internal <b>ReAct</b>
+ * loop for
+ * automatic tool execution.
+ * </p>
+ *
+ * <h3>Usage Example:</h3>
+ * 
+ * <pre>
+ * AgentPlanner planner = new AgentPlanner(chatClient);
+ * String result = planner.plan(assembledContext);
+ * </pre>
+ *
+ * @author Prasad Gaikwad
  */
 @Service
 public class AgentPlanner {
@@ -27,15 +47,19 @@ public class AgentPlanner {
     }
 
     /**
-     * Plans and executes the next step for the agent.
+     * Decision-making loop that generates a text response or executes tools.
+     *
      * <p>
-     * For MVP-2, this primarily generates a text response using conversation
-     * history and the system prompt. In future slices, this will handle
-     * tool execution loops (ReAct pattern).
+     * This method assembles a prompt from the {@link AgentContext} and calls the
+     * LLM.
+     * It uses {@link ToolCallAdvisor} to automatically handle any tool calls
+     * requested
+     * by the model, returning the final synthesized answer.
      * </p>
      *
      * @param context the full context for decision making
-     * @return the generated response text or thought process
+     * @return the generated response text, which may be the result of multiple tool
+     *         calls
      */
     public String plan(AgentContext context) {
         logger.debug("Planning response for context with {} history messages", context.conversationHistory().size());
@@ -58,8 +82,10 @@ public class AgentPlanner {
 
         // 2. Call LLM
         String response = chatClient.prompt()
+                .advisors(ToolCallAdvisor.builder().build())
                 .messages(messages)
-                .tools(context.availableTools().toArray())
+                .tools(context.localTools().toArray())
+                .toolCallbacks(context.mcpTools())
                 .call()
                 .content();
 

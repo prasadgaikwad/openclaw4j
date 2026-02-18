@@ -1,37 +1,40 @@
 package dev.prasadgaikwad.openclaw4j.channel;
 
 /**
- * Defines the contract for all channel adapters in the OpenClaw4J system.
+ * Defines the core contract for all channel-specific adapters in OpenClaw4J.
  *
- * <h2>Design Note: Why Not Sealed Here?</h2>
  * <p>
- * Ideally, we'd use a {@code sealed interface} to restrict implementations.
- * However, in Java without the module system (unnamed modules), a sealed type
- * can only permit classes in the <strong>same package</strong>. Since our
- * adapter
- * implementations live in sub-packages (e.g., {@code channel.slack}), we use
- * a regular interface here.
+ * This interface follows the <b>Adapter Design Pattern</b>. Its primary role is
+ * to bridge the
+ * gap between the platform-agnostic agent core and external communication
+ * platforms (e.g., Slack, Discord).
  * </p>
  *
  * <p>
- * The trade-off: we lose compile-time exhaustiveness in {@code switch}
- * expressions.
- * We compensate with clear package convention — each sub-package under
- * {@code channel/}
- * contains exactly one adapter implementation. In a modular (JPMS) build, this
- * interface could be sealed with cross-package permits.
+ * Implementations are responsible for:
  * </p>
+ * <ul>
+ * <li>Translating platform-specific payloads into normalized
+ * {@link InboundMessage} records.</li>
+ * <li>Converting the agent's normalized {@link OutboundMessage} records into
+ * platform-specific API calls.</li>
+ * <li>Exposing their {@link ChannelType} for registration and routing.</li>
+ * </ul>
  *
- * <h2>Design Pattern: Adapter</h2>
- * <p>
- * Each implementation translates between a platform-specific API and the
- * agent's normalized message types ({@link InboundMessage},
- * {@link OutboundMessage}).
- * The agent core only speaks in these normalized types — it never touches
- * Slack, Discord, or WhatsApp APIs directly.
- * </p>
+ * <h3>Example Usage in a Controller/Handler:</h3>
+ * 
+ * <pre>
+ * // Received a Slack event
+ * InboundMessage normalizedInput = slackAdapter.normalize(slackEvent);
+ * OutboundMessage response = agentService.process(normalizedInput);
  *
+ * // Dispatch back through the adapter
+ * slackAdapter.sendMessage(response);
+ * </pre>
+ *
+ * @author Prasad Gaikwad
  * @see dev.prasadgaikwad.openclaw4j.channel.slack.SlackChannelAdapter
+ * @see dev.prasadgaikwad.openclaw4j.channel.console.ConsoleChannelAdapter
  */
 public interface ChannelAdapter {
 
