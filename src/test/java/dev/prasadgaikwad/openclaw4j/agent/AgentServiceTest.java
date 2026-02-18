@@ -34,16 +34,20 @@ class AgentServiceTest {
         private ShortTermMemory shortTermMemory;
 
         @Mock
-        private ToolRegistry toolRegistry;
+        private dev.prasadgaikwad.openclaw4j.memory.MemoryService memoryService;
 
         @Mock
-        private org.springframework.core.io.Resource systemPromptResource;
+        private dev.prasadgaikwad.openclaw4j.memory.ProfileService profileService;
+
+        @Mock
+        private ToolRegistry toolRegistry;
 
         private AgentService agentService;
 
         @BeforeEach
         void setUp() {
-                agentService = new AgentService(agentPlanner, shortTermMemory, toolRegistry, systemPromptResource);
+                agentService = new AgentService(agentPlanner, shortTermMemory, memoryService, profileService,
+                                toolRegistry);
         }
 
         @Test
@@ -59,6 +63,9 @@ class AgentServiceTest {
                                 Instant.now(),
                                 Map.of());
 
+                var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
+                when(profileService.getProfile()).thenReturn(profile);
+                when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Hello, User! I am OpenClaw4J.");
 
@@ -90,6 +97,9 @@ class AgentServiceTest {
                                 Instant.now(),
                                 Map.of());
 
+                var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
+                when(profileService.getProfile()).thenReturn(profile);
+                when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Thread reply");
 

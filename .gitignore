@@ -28,7 +28,7 @@ out/
 # These contain private user data and should
 # never be committed to version control
 # ─────────────────────────────────────────────
-memory/
+.memory/
 
 # ─────────────────────────────────────────────
 # OS files

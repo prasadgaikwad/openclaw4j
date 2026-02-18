@@ -5,15 +5,14 @@ import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
 import dev.prasadgaikwad.openclaw4j.memory.MemorySnapshot;
 import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
 import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
+import dev.prasadgaikwad.openclaw4j.memory.MemoryService;
+import dev.prasadgaikwad.openclaw4j.memory.ProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -56,18 +55,21 @@ public class AgentService {
 
     private final AgentPlanner agentPlanner;
     private final ShortTermMemory shortTermMemory;
+    private final MemoryService memoryService;
+    private final ProfileService profileService;
 
     private final ToolRegistry toolRegistry;
-    private final Resource systemPromptResource;
 
     public AgentService(AgentPlanner agentPlanner,
             ShortTermMemory shortTermMemory,
-            ToolRegistry toolRegistry,
-            @Value("classpath:prompts/system.prompt") Resource systemPromptResource) {
+            MemoryService memoryService,
+            ProfileService profileService,
+            ToolRegistry toolRegistry) {
         this.agentPlanner = agentPlanner;
         this.shortTermMemory = shortTermMemory;
+        this.memoryService = memoryService;
+        this.profileService = profileService;
         this.toolRegistry = toolRegistry;
-        this.systemPromptResource = systemPromptResource;
     }
 
     /**
@@ -90,28 +92,17 @@ public class AgentService {
         // 2. Retrieve conversation history
         var history = shortTermMemory.getHistory(contextId);
 
-        // 3. Build Agent Context
-        // Load system prompt from resource
-        String systemPrompt = "You are a helpful assistant.";
-        try {
-            systemPrompt = systemPromptResource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            log.error("Failed to load system prompt", e);
-        }
-
-        // For MVP-3, we inject tools from the registry
-        var profile = new AgentProfile(
-                "User",
-                "Helpful Assistant",
-                systemPrompt,
-                Collections.emptyMap());
+        // 3. Load Memory and Profile (Slice 4)
+        var profile = profileService.getProfile();
+        var relevantMemories = memoryService.getRelevantMemories();
 
         var memorySnapshot = new MemorySnapshot(
-                Collections.emptyList(),
-                Collections.emptyMap(),
-                Optional.empty(),
+                relevantMemories,
+                profile.preferences(),
+                Optional.of(profile.agentPersonality()),
                 Optional.empty());
 
+        // 4. Build Agent Context
         var context = new AgentContext(
                 message,
                 history,
@@ -121,7 +112,7 @@ public class AgentService {
                 toolRegistry.getLocalTools(),
                 toolRegistry.getMcpTools());
 
-        // 4. Plan and Generate Response
+        // 5. Plan and Generate Response
         String responseText = agentPlanner.plan(context);
 
         // Fallback for empty responses to avoid IllegalArgumentException in
@@ -131,11 +122,13 @@ public class AgentService {
             responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
         }
 
-        // 5. Update Short-Term Memory
-        // Add User Message
+        // 6. Update Short-Term Memory
         shortTermMemory.addMessage(contextId, new UserMessage(message.content()));
-        // Add Agent Response
         shortTermMemory.addMessage(contextId, new AssistantMessage(responseText));
+
+        // 7. Log raw event to daily memory (Slice 4)
+        memoryService.logEvent(String.format("Interaction with %s: Input='%s' | Response='%s'",
+                message.userId(), truncate(message.content(), 50), truncate(responseText, 50)));
 
         log.info("Agent response for channel={}: {}",
                 message.channelId(), truncate(responseText, 100));

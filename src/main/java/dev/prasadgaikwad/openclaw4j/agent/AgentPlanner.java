@@ -71,7 +71,22 @@ public class AgentPlanner {
 
         // 1. Prepare messages
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(systemPromptText));
+
+        StringBuilder fullSystemPrompt = new StringBuilder(systemPromptText);
+
+        // Append Long-Term Memory (Slice 4)
+        List<String> memories = context.memory().relevantMemories();
+        if (memories != null && !memories.isEmpty()) {
+            fullSystemPrompt.append("\n\n### Long-Term Memory (Relevant Facts):\n");
+            memories.forEach(m -> fullSystemPrompt.append("- ").append(m).append("\n"));
+        }
+
+        // Append Profile Directive (Slice 4)
+        context.memory().soulDirective().ifPresent(d -> {
+            fullSystemPrompt.append("\n\n### Soul Directive:\n").append(d).append("\n");
+        });
+
+        messages.add(new SystemMessage(fullSystemPrompt.toString()));
 
         // Add history
         messages.addAll(context.conversationHistory());
