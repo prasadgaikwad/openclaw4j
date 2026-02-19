@@ -7,13 +7,13 @@ import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
 import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
 import dev.prasadgaikwad.openclaw4j.memory.MemoryService;
 import dev.prasadgaikwad.openclaw4j.memory.ProfileService;
+import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.Optional;
 
 /**
@@ -57,19 +57,21 @@ public class AgentService {
     private final ShortTermMemory shortTermMemory;
     private final MemoryService memoryService;
     private final ProfileService profileService;
-
     private final ToolRegistry toolRegistry;
+    private final RAGService ragService;
 
     public AgentService(AgentPlanner agentPlanner,
             ShortTermMemory shortTermMemory,
             MemoryService memoryService,
             ProfileService profileService,
-            ToolRegistry toolRegistry) {
+            ToolRegistry toolRegistry,
+            RAGService ragService) {
         this.agentPlanner = agentPlanner;
         this.shortTermMemory = shortTermMemory;
         this.memoryService = memoryService;
         this.profileService = profileService;
         this.toolRegistry = toolRegistry;
+        this.ragService = ragService;
     }
 
     /**
@@ -97,6 +99,9 @@ public class AgentService {
         var profile = profileService.getProfile();
         var relevantMemories = memoryService.getRelevantMemories();
 
+        // 3b. Load Relevant Documents from RAG (Slice 5)
+        var ragDocs = ragService.findRelevantDocuments(message.content());
+
         var memorySnapshot = new MemorySnapshot(
                 relevantMemories,
                 profile.preferences(),
@@ -108,7 +113,7 @@ public class AgentService {
                 message,
                 history,
                 memorySnapshot,
-                Collections.emptyList(),
+                ragDocs,
                 profile,
                 toolRegistry.getLocalTools(),
                 toolRegistry.getMcpTools());

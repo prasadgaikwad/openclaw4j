@@ -179,7 +179,7 @@ graph TD
 | **MVP-2** | Intelligence | LLM-powered responses with conversation history | Done |
 | **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) | Done |
 | **MVP-4** | Memory | Persistent layered memory system | Done |
-| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Next |
+| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Done |
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Next |
 | **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Next |
 
@@ -194,13 +194,13 @@ graph TD
 - Java 25+
 - Gradle 8+
 - Node.js (for npx-based MCP servers)
-- PostgreSQL 16+ (for PGVector)
+- PostgreSQL 16+ (for PGVector) — [Setup Guide](./docs/setup/PGVECTOR_SETUP.md)
 - A Slack workspace with bot permissions
 - An LLM API key (OpenAI, Anthropic, or Ollama)
 
 ### Slack App Setup
 
-> 📝 **Step-by-step guide:** See [docs/SLACK_SETUP.md](./SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
+> 📝 **Step-by-step guide:** See [docs/setup/SLACK_SETUP.md](./docs/setup/SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
 
 ### Configuring LLM Providers
 
