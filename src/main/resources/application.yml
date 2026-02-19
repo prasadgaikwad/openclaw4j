@@ -44,7 +44,7 @@ spring:
         dimensions: 1536 # Default for OpenAI, will be overridden by model choice
   
   datasource:
-    url: ${JDBC_URL:jdbc:postgresql://localhost:5432/openclaw4j}
+    url: ${JDBC_URL:jdbc:postgresql://localhost:5432/openclaw-pg}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
