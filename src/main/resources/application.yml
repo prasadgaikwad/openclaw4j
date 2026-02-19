@@ -18,16 +18,14 @@ spring:
         enabled: false
         options:
           model: gpt-4o
-      embedding:
-        enabled: false
     ollama:
       base-url: http://localhost:11434
       chat:
         enabled: false
         options:
           model: kimi-k2-thinking:cloud
-      embedding:
-        enabled: false
+    model:
+      embedding: ${openclaw4j.ai.provider:ollama}
     mcp:
       client:
         stdio:
@@ -104,8 +102,6 @@ spring:
     openai:
       chat:
         enabled: true
-      embedding:
-        enabled: true
 
 ---
 # ─────────────────────────────────────────────
@@ -118,6 +114,4 @@ spring:
   ai:
     ollama:
       chat:
-        enabled: true
-      embedding:
         enabled: true
