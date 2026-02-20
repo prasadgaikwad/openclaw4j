@@ -25,7 +25,7 @@ public class ChannelIndexer {
     private final MethodsClient slack;
     private final RAGService ragService;
 
-    @Value("${openclaw4j.rag.channels:C0AFDJK0TEV}")
+    @Value("${openclaw4j.rag.channels:}")
     private List<String> channelIds;
 
     public ChannelIndexer(MethodsClient slack, RAGService ragService) {
