@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.ai.vectorstore.VectorStore;
 import javax.sql.DataSource;
 import dev.prasadgaikwad.openclaw4j.rag.RAGService;
@@ -13,6 +13,14 @@ import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 /**
  * Smoke test that verifies the Spring Boot application context loads
  * successfully.
+ *
+ * <p>
+ * We mock heavyweight infrastructure beans (VectorStore, DataSource,
+ * RAGService)
+ * so that this test can run without a running PostgreSQL or Ollama instance.
+ * {@code @MockitoBean} is the modern replacement for the deprecated
+ * {@code @MockBean}.
+ * </p>
  */
 @SpringBootTest
 @ActiveProfiles("openai")
@@ -23,13 +31,13 @@ import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 })
 class OpenClaw4JApplicationTest {
 
-    @MockBean
+    @MockitoBean
     private VectorStore vectorStore;
 
-    @MockBean
+    @MockitoBean
     private DataSource dataSource;
 
-    @MockBean
+    @MockitoBean
     private RAGService ragService;
 
     @Test
