@@ -121,7 +121,6 @@ User receives agent response
 openclaw4j/
 ├── docs/                                # Specification & documentation
 │   ├── PRD.md                           # Product requirements & technical spec
-│   ├── README.md                        # Documentation overview
 │   └── learning/                        # Learning guides per slice
 │
 ├── src/main/java/dev/prasadgaikwad/openclaw4j/
