@@ -35,7 +35,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * </pre>
  *
  * @author Prasad Gaikwad
- * @see <a href="docs/README.md">README.md</a>
+ * @see <a href="README.md">README.md</a>
  * @see <a href="docs/PRD.md">Product Requirements Document</a>
  */
 @EnableScheduling
