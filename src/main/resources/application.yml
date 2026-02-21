@@ -115,3 +115,14 @@ spring:
     ollama:
       chat:
         enabled: true
+
+---
+# ─────────────────────────────────────────────
+# Profile: console
+# ─────────────────────────────────────────────
+# This profile enables the interactive console (REPL) mode.
+# Usage: ./gradlew bootRun --args='--spring.profiles.active=dev,console'
+spring:
+  config:
+    activate:
+      on-profile: console
