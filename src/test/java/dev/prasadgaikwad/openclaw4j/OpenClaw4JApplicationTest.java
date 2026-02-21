@@ -21,7 +21,6 @@ import dev.prasadgaikwad.openclaw4j.rag.RAGService;
  * {@code @MockitoBean} is the modern replacement for the deprecated
  * {@code @MockBean}.
  * </p>
- * 
  */
 @SpringBootTest
 @ActiveProfiles("openai")
