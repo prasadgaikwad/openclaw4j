@@ -63,6 +63,8 @@ openclaw4j:
   ai:
     # Options: openai, ollama
     provider: ollama
+  rag:
+    enabled: false
   tools:
     github:
       token: ${GITHUB_TOKEN:}

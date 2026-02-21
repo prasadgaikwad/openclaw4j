@@ -100,6 +100,7 @@ User receives agent response
 | **Layered memory** | Short-term → working → long-term → profiles → task state |
 | **Reminders** | Time-based reminders with cron scheduling |
 | **Heartbeat** | Periodic background checks and proactive notifications |
+| **RAG Toggle** | Feature flag to disable RAG by default (`openclaw4j.rag.enabled`) |
 
 ## Technology Stack
 
@@ -181,7 +182,7 @@ graph TD
 | **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) | Done |
 | **MVP-4** | Memory | Persistent layered memory system | Done |
 | **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Done |
-| **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Next |
+| **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Done |
 | **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Next |
 
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
