@@ -227,6 +227,13 @@ openclaw4j:
    ./gradlew bootRun --args='--spring.profiles.active=openai --openclaw4j.ai.provider=openai'
    ```
 
+#### Running in Console Mode (REPL)
+To interact with the agent directly via the terminal without connecting to Slack, use the `console` profile:
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=dev,console'
+```
+
 ### Quick Start
 
 ```bash

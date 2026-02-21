@@ -40,9 +40,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @EnableScheduling
 @SpringBootApplication
-public class OpenClaw4JApplication {
+public class OpenClaw4jApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(OpenClaw4JApplication.class, args);
+        SpringApplication.run(OpenClaw4jApplication.class, args);
     }
 }

@@ -21,7 +21,7 @@ import dev.prasadgaikwad.openclaw4j.rag.RAGService;
         "openclaw4j.channel.slack.signing-secret=test-signing-secret",
         "spring.ai.openai.api-key=test"
 })
-class OpenClaw4JApplicationTest {
+class OpenClaw4jApplicationTest {
 
     @MockBean
     private VectorStore vectorStore;
