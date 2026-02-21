@@ -95,7 +95,7 @@ User receives agent response
 |---------|-------------|
 | **Multi-channel** | Slack (MVP) → Discord → WhatsApp |
 | **Agentic reasoning** | ReAct loop with LLM-powered planning |
-| **MCP tools** | GitHub issues/PRs, Slack messaging, Notion pages |
+| **Local & MCP tools** | GitHub, Slack, DateTime, Memory management, Notion |
 | **RAG knowledge** | Vector-indexed channel history for contextual answers |
 | **Layered memory** | Short-term → working → long-term → profiles → task state |
 | **Reminders** | Time-based reminders with cron scheduling |
@@ -120,11 +120,11 @@ User receives agent response
 openclaw4j/
 ├── docs/                                # Specification & documentation
 │   ├── PRD.md                           # Product requirements & technical spec
-│   ├── README.md                        # This file
+│   ├── README.md                        # Documentation overview
 │   └── learning/                        # Learning guides per slice
 │
 ├── src/main/java/dev/prasadgaikwad/openclaw4j/
-│   ├── OpenClaw4JApplication.java       # Entry point
+│   ├── OpenClaw4jApplication.java       # Entry point
 │   ├── channel/                         # Channel adapters (Slack, Console)
 │   │   ├── ChannelAdapter.java          # Sealed interface
 │   │   └── slack/                       # Slack implementation
@@ -132,7 +132,7 @@ openclaw4j/
 │   ├── config/                          # Configuration (AIConfig, SlackAppConfig)
 │   ├── memory/                          # Memory management (ShortTermMemory)
 │   ├── tool/                            # Tool System (ToolRegistry, AITool)
-│   └── util/                            # Utilities
+│   └── rag/                             # RAG (Vector Search & Indexing)
 │
 ├── src/main/resources/
 │   ├── application.yml
@@ -147,7 +147,8 @@ openclaw4j/
 │   ├── daily/                           # Daily raw interaction logs
 │   └── heartbeat-state.json             # Scheduler state
 │
-└── build.gradle
+├── build.gradle
+└── README.md                            # This file
 ```
 
 ## Memory System
@@ -186,8 +187,6 @@ graph TD
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
 
 ## Getting Started
-
-> 🚧 **Coming soon** — MVP-1 implementation will include setup instructions.
 
 ### Prerequisites
 
@@ -240,8 +239,11 @@ cd openclaw4j
 cp .env.example .env
 # Edit .env with your API keys and tokens
 
-# Run the application
+# Run with OpenAI (default)
 ./gradlew bootRun
+
+# Run with Ollama (local)
+./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
 ```
 
 ## Design Principles

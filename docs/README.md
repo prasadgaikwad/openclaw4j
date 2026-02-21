@@ -95,7 +95,7 @@ User receives agent response
 |---------|-------------|
 | **Multi-channel** | Slack (MVP) → Discord → WhatsApp |
 | **Agentic reasoning** | ReAct loop with LLM-powered planning |
-| **MCP tools** | GitHub issues/PRs, Slack messaging, Notion pages |
+| **Local & MCP tools** | GitHub, Slack, DateTime, Memory management, Notion |
 | **RAG knowledge** | Vector-indexed channel history for contextual answers |
 | **Layered memory** | Short-term → working → long-term → profiles → task state |
 | **Reminders** | Time-based reminders with cron scheduling |
@@ -124,7 +124,7 @@ openclaw4j/
 │   └── learning/                        # Learning guides per slice
 │
 ├── src/main/java/dev/prasadgaikwad/openclaw4j/
-│   ├── OpenClaw4JApplication.java       # Entry point
+│   ├── OpenClaw4jApplication.java       # Entry point
 │   ├── channel/                         # Channel adapters (Slack, Console)
 │   │   ├── ChannelAdapter.java          # Sealed interface
 │   │   └── slack/                       # Slack implementation
@@ -132,7 +132,7 @@ openclaw4j/
 │   ├── config/                          # Configuration (AIConfig, SlackAppConfig)
 │   ├── memory/                          # Memory management (ShortTermMemory)
 │   ├── tool/                            # Tool System (ToolRegistry, AITool)
-│   └── util/                            # Utilities
+│   └── rag/                             # RAG (Vector Search & Indexing)
 │
 ├── src/main/resources/
 │   ├── application.yml
@@ -179,7 +179,7 @@ graph TD
 | **MVP-2** | Intelligence | LLM-powered responses with conversation history | Done |
 | **MVP-3** | Tools | MCP tool execution (GitHub, Slack tools) | Done |
 | **MVP-4** | Memory | Persistent layered memory system | Done |
-| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Next |
+| **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Done |
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Next |
 | **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Next |
 
@@ -187,20 +187,18 @@ graph TD
 
 ## Getting Started
 
-> 🚧 **Coming soon** — MVP-1 implementation will include setup instructions.
-
 ### Prerequisites
 
 - Java 25+
 - Gradle 8+
 - Node.js (for npx-based MCP servers)
-- PostgreSQL 16+ (for PGVector)
+- PostgreSQL 16+ (for PGVector) — [Setup Guide](./setup/PGVECTOR_SETUP.md)
 - A Slack workspace with bot permissions
 - An LLM API key (OpenAI, Anthropic, or Ollama)
 
 ### Slack App Setup
 
-> 📝 **Step-by-step guide:** See [docs/SLACK_SETUP.md](./SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
+> 📝 **Step-by-step guide:** See [docs/setup/SLACK_SETUP.md](./setup/SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
 
 ### Configuring LLM Providers
 
@@ -240,8 +238,11 @@ cd openclaw4j
 cp .env.example .env
 # Edit .env with your API keys and tokens
 
-# Run the application
+# Run with OpenAI (default)
 ./gradlew bootRun
+
+# Run with Ollama (local)
+./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
 ```
 
 ## Design Principles
