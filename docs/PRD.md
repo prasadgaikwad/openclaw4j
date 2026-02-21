@@ -784,6 +784,7 @@ flowchart LR
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `rag.enabled` | `false` | Global feature flag to enable/disable RAG retrieval |
 | `rag.indexing.depth` | 200 | Number of past messages to index per channel |
 | `rag.indexing.frequency` | `PT30M` | Indexing interval (ISO 8601 duration) |
 | `rag.retrieval.top-k` | 5 | Number of documents to retrieve |

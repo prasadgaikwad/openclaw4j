@@ -69,7 +69,6 @@ class AgentServiceTest {
                 var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
                 when(profileService.getProfile()).thenReturn(profile);
                 when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
-                when(ragService.findRelevantDocuments(anyString())).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Hello, User! I am OpenClaw4J.");
 
@@ -104,7 +103,6 @@ class AgentServiceTest {
                 var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
                 when(profileService.getProfile()).thenReturn(profile);
                 when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
-                when(ragService.findRelevantDocuments(anyString())).thenReturn(Collections.emptyList());
                 when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
                 when(agentPlanner.plan(any())).thenReturn("Thread reply");
 

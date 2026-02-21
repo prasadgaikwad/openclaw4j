@@ -9,6 +9,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,6 +95,19 @@ public class AgentPlanner {
                 fullSystemPrompt.append("- ").append(doc.getText()).append("\n");
             });
         }
+
+        // Append Current Context (Slice 6)
+        String nowWithOffset = OffsetDateTime.now().toString();
+        fullSystemPrompt.append("\n\n### Current Context:\n")
+                .append("- User ID: ").append(context.message().userId()).append("\n")
+                .append("- Channel ID: ").append(context.message().channelId()).append("\n");
+        context.message().threadId()
+                .ifPresent(tid -> fullSystemPrompt.append("- Thread ID: ").append(tid).append("\n"));
+        fullSystemPrompt.append("- Current Time: ").append(nowWithOffset).append("\n")
+                .append("  (Use this as your reference when computing reminder times. ")
+                .append("Always supply 'remindAt' as a full ISO-8601 datetime WITH timezone offset, ")
+                .append("e.g. if current time is 2026-02-19T21:30:00-06:00 and user says ")
+                .append("'in 5 minutes', supply 2026-02-19T21:35:00-06:00)\n");
 
         messages.add(new SystemMessage(fullSystemPrompt.toString()));
 
