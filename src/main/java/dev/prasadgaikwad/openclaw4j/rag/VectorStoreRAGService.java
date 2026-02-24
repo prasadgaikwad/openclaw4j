@@ -3,6 +3,7 @@ package dev.prasadgaikwad.openclaw4j.rag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,11 @@ public class VectorStoreRAGService implements RAGService {
             return;
         }
         log.info("Indexing {} documents into vector store", documents.size());
-        vectorStore.add(documents);
+
+        TokenTextSplitter textSplitter = new TokenTextSplitter(256, 128, 5, 10000, true);
+        List<Document> splitDocuments = textSplitter.apply(documents);
+
+        log.info("Split into {} chunks for vector store", splitDocuments.size());
+        vectorStore.add(splitDocuments);
     }
 }

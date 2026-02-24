@@ -1,0 +1,30 @@
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    container_name: openclaw4j_db
+    environment:
+      POSTGRES_DB: openclaw4j
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d openclaw4j" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: openclaw4j-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   restart: unless-stopped
+
+volumes:
+  pgdata:
+  ollama_data:
