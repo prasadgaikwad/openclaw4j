@@ -41,7 +41,7 @@ spring:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: 1536 # Default for OpenAI, will be overridden by model choice
+        dimensions: 1024 # Default for Ollama model kimi-k2-thinking:cloud
         initialize-schema: true
   
   datasource:
