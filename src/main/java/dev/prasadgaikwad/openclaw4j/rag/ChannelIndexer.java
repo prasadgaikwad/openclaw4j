@@ -54,7 +54,7 @@ public class ChannelIndexer {
         try {
             var result = slack.conversationsHistory(ConversationsHistoryRequest.builder()
                     .channel(channelId)
-                    .limit(100)
+                    .limit(10)
                     .build());
 
             if (!result.isOk()) {
