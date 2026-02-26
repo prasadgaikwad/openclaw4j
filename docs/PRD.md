@@ -370,12 +370,11 @@ gantt
 
 | Deliverable | Description |
 |-------------|-------------|
-| Notion tool | Create pages, query databases via Notion API |
 | Compound tasks | Multi-step task planning and execution |
-| Discord adapter | Full Discord bot integration |
 | Error handling | Graceful failure, retry logic, user-facing error messages |
+| Long running tasks | Periodic checks, timestamps in `heartbeat-state.json` |
 
-**Exit criteria:** Complex multi-tool task execution + Discord support operational.
+**Exit criteria:** Complex multi-tool task execution + long running tasks operational.
 
 ---
 

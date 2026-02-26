@@ -138,6 +138,9 @@ public class AgentService {
                 String responseText;
                 try {
                         responseText = agentPlanner.plan(context);
+                } catch (Exception e) {
+                        log.error("Error during agent planning for session {}: {}", contextId, e.getMessage(), e);
+                        responseText = "I encountered an error while trying to process your request. Please try again in a few moments or rephrase your request.";
                 } finally {
                         ReminderContext.clear();
                 }
@@ -145,7 +148,7 @@ public class AgentService {
                 // Fallback for empty responses to avoid IllegalArgumentException in
                 // OutboundMessage
                 if (responseText == null || responseText.isBlank()) {
-                        log.warn("Agent generated an empty response. Using fallback message.");
+                        log.warn("Agent generated an empty response in session {}. Using fallback message.", contextId);
                         responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
                 }
 

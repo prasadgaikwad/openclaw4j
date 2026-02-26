@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.retry.annotation.EnableRetry;
 
 /**
  * Entry point for the OpenClaw4J autonomous agent.
@@ -38,6 +39,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @see <a href="README.md">README.md</a>
  * @see <a href="docs/PRD.md">Product Requirements Document</a>
  */
+@EnableRetry
 @EnableScheduling
 @SpringBootApplication
 public class OpenClaw4JApplication {

@@ -56,6 +56,13 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // ─────────────────────────────────────────────
+    // Resiliency
+    // ─────────────────────────────────────────────
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.aspectj:aspectjweaver'
+
+    // ─────────────────────────────────────────────
     // Testing
     // ─────────────────────────────────────────────
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
