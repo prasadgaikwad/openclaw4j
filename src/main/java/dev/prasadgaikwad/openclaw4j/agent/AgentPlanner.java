@@ -7,6 +7,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -57,18 +59,35 @@ public class AgentPlanner {
      * requested
      * by the model, returning the final synthesized answer.
      * </p>
+     * 
+     * <p>
+     * Annotated with {@code @Retryable} to handle transient model or tool failures
+     * during the complex ReAct cycle.
+     * </p>
      *
      * @param context the full context for decision making
      * @return the generated response text, which may be the result of multiple tool
      *         calls
      */
     @SuppressWarnings("null")
+    @Retryable(retryFor = { Exception.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public String plan(AgentContext context) {
         logger.debug("Planning response for context with {} history messages", context.conversationHistory().size());
 
         String systemPromptText = context.profile().systemPrompt();
         if (systemPromptText == null || systemPromptText.isEmpty()) {
-            systemPromptText = "You are OpenClaw4J, a helpful AI assistant.";
+            systemPromptText = """
+                    You are OpenClaw4J, a powerful and autonomous AI agent.
+                    Your goal is to complete tasks efficiently by coordinating multiple tools if necessary.
+
+                    ### Multi-Step Planning (Compound Tasks):
+                    1. ANALYZE the user request carefully.
+                    2. BREAK DOWN complex requests into logical steps.
+                    3. EXECUTE tools sequentially, using the observation from one step to inform the next.
+                    4. SUMMARIZE the final results clearly for the user.
+
+                    If a task requires multiple tool calls, do not hesitate to invoke them one after another in your reasoning loop.
+                    """;
         }
 
         // 1. Prepare messages

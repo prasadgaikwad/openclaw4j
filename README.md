@@ -95,11 +95,13 @@ User receives agent response
 |---------|-------------|
 | **Multi-channel** | Slack (MVP) → Discord → WhatsApp |
 | **Agentic reasoning** | ReAct loop with LLM-powered planning |
+| **Resilience** | Automatic retries via **Spring Retry** and error feedback |
+| **Compound Tasks** | Multi-step task planning and sequential tool orchestration |
 | **Local & MCP tools** | GitHub, Slack, DateTime, Memory management, Notion |
 | **RAG knowledge** | Vector-indexed channel history for contextual answers |
 | **Layered memory** | Short-term → working → long-term → profiles → task state |
 | **Reminders** | Time-based reminders with cron scheduling |
-| **Heartbeat** | Periodic background checks and proactive notifications |
+| **Advanced Heartbeat** | Periodic checks with system-wide event broadcasting |
 | **RAG Toggle** | Feature flag to disable RAG by default (`openclaw4j.rag.enabled`) |
 
 ## Technology Stack
@@ -182,7 +184,7 @@ graph TD
 | **MVP-4** | Memory | Persistent layered memory system | Done |
 | **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Done |
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Done |
-| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Next |
+| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Done |
 
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
 
