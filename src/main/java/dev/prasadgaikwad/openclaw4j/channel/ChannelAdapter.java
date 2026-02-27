@@ -35,6 +35,7 @@ package dev.prasadgaikwad.openclaw4j.channel;
  * @author Prasad Gaikwad
  * @see dev.prasadgaikwad.openclaw4j.channel.slack.SlackChannelAdapter
  * @see dev.prasadgaikwad.openclaw4j.channel.console.ConsoleChannelAdapter
+ * @see dev.prasadgaikwad.openclaw4j.channel.whatsapp.WhatsAppChannelAdapter
  */
 public interface ChannelAdapter {
 

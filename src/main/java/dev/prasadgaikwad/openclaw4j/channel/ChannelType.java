@@ -55,9 +55,9 @@ public sealed interface ChannelType {
 
     /**
      * Represents a WhatsApp channel connection.
-     * (Placeholder for future slice)
      *
      * @param phoneNumberId the WhatsApp Business phone number identifier
+     * @see dev.prasadgaikwad.openclaw4j.channel.whatsapp.WhatsAppChannelAdapter
      */
     record WhatsApp(String phoneNumberId) implements ChannelType {
     }

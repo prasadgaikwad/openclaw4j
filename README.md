@@ -93,7 +93,7 @@ User receives agent response
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-channel** | Slack (MVP) → Discord → WhatsApp |
+| **Multi-channel** | Slack (MVP), WhatsApp, Console → Discord |
 | **Agentic reasoning** | ReAct loop with LLM-powered planning |
 | **Resilience** | Automatic retries via **Spring Retry** and error feedback |
 | **Compound Tasks** | Multi-step task planning and sequential tool orchestration |
@@ -127,9 +127,10 @@ openclaw4j/
 │
 ├── src/main/java/dev/prasadgaikwad/openclaw4j/
 │   ├── OpenClaw4jApplication.java       # Entry point
-│   ├── channel/                         # Channel adapters (Slack, Console)
+│   ├── channel/                         # Channel adapters (Slack, WhatsApp, Console)
 │   │   ├── ChannelAdapter.java          # Sealed interface
-│   │   └── slack/                       # Slack implementation
+│   │   ├── slack/                       # Slack implementation
+│   │   └── whatsapp/                    # WhatsApp Cloud API implementation
 │   ├── agent/                           # Agent core (planner, service, context)
 │   ├── config/                          # Configuration (AIConfig, SlackAppConfig)
 │   ├── memory/                          # Memory management (ShortTermMemory)
@@ -184,7 +185,8 @@ graph TD
 | **MVP-4** | Memory | Persistent layered memory system | Done |
 | **MVP-5** | RAG | Vector-indexed channel history for knowledge retrieval | Done |
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Done |
-| **MVP-7** | Polish | Notion tool, compound tasks, Discord adapter | Done |
+| **MVP-7** | Polish | Compound tasks, error handling, advanced heartbeat | Done |
+| **MVP-8** | WhatsApp | WhatsApp Business Cloud API channel adapter | Done |
 
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
 
@@ -198,10 +200,25 @@ graph TD
 - PostgreSQL 16+ (for PGVector) — [Setup Guide](./docs/setup/PGVECTOR_SETUP.md)
 - A Slack workspace with bot permissions
 - An LLM API key (OpenAI, Anthropic, or Ollama)
+- *(Optional)* A Meta Developer Account for WhatsApp integration
 
 ### Slack App Setup
 
 > 📝 **Step-by-step guide:** See [docs/setup/SLACK_SETUP.md](./docs/setup/SLACK_SETUP.md) for detailed instructions on creating your Slack App, configuring scopes, and getting your tokens.
+
+### WhatsApp Setup
+
+1. Create a [Meta Developer Account](https://developers.facebook.com/) and a WhatsApp Business App.
+2. In the App Dashboard, go to **WhatsApp → API Setup** to get your **Phone Number ID** and **Access Token**.
+3. Set environment variables:
+   ```bash
+   export WHATSAPP_ACCESS_TOKEN=your-access-token
+   export WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+   export WHATSAPP_VERIFY_TOKEN=any-random-string-you-choose
+   ```
+4. Configure the webhook URL in the Meta Dashboard: `https://your-domain/whatsapp/webhook`
+   - For local development, use [ngrok](https://ngrok.com/): `ngrok http 8080`
+5. Subscribe to the `messages` webhook field.
 
 ### Configuring LLM Providers
 
