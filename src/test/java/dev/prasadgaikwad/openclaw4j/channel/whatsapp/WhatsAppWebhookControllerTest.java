@@ -4,6 +4,9 @@ import dev.prasadgaikwad.openclaw4j.agent.AgentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,67 +31,55 @@ import static org.mockito.Mockito.*;
  */
 class WhatsAppWebhookControllerTest {
 
-    private WhatsAppWebhookController controller;
-    private AgentService mockAgentService;
-    private WhatsAppChannelAdapter mockAdapter;
+        private WhatsAppWebhookController controller;
+        private AgentService mockAgentService;
+        private WhatsAppChannelAdapter mockAdapter;
 
-    @BeforeEach
-    void setUp() {
-        mockAgentService = mock(AgentService.class);
-        mockAdapter = mock(WhatsAppChannelAdapter.class);
-        var properties = new WhatsAppProperties(
-                "test-access-token",
-                "123456789",
-                "my-secret-verify-token",
-                "v21.0");
+        @BeforeEach
+        void setUp() {
+                mockAgentService = mock(AgentService.class);
+                mockAdapter = mock(WhatsAppChannelAdapter.class);
+                var properties = new WhatsAppProperties(
+                                "test-access-token",
+                                "123456789",
+                                "my-secret-verify-token",
+                                "v21.0");
 
-        controller = new WhatsAppWebhookController(mockAgentService, mockAdapter, properties);
-    }
+                controller = new WhatsAppWebhookController(mockAgentService, mockAdapter, properties);
+        }
 
-    @Test
-    @DisplayName("Should verify webhook with correct token and return challenge")
-    void verifyWebhook_shouldReturnChallenge_whenTokenMatches() {
-        // Act
-        var response = controller.verifyWebhook("subscribe", "my-secret-verify-token", "challenge123");
+        @ParameterizedTest
+        @CsvSource({
+                        "subscribe, my-secret-verify-token, challenge123, 200, challenge123",
+                        "subscribe, wrong-token, challenge123, 403, ",
+                        "unsubscribe, my-secret-verify-token, challenge123, 403, "
+        })
+        @DisplayName("Should verify webhook correctly based on mode and token")
+        void verifyWebhook_shouldReturnCorrectResponse(String mode, String token, String challenge, int expectedStatus,
+                        String expectedBody) {
+                // Act
+                var response = controller.verifyWebhook(mode, token, challenge);
 
-        // Assert
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals("challenge123", response.getBody());
-    }
+                // Assert
+                assertEquals(expectedStatus, response.getStatusCode().value());
+                if (expectedBody != null) {
+                        assertEquals(expectedBody, response.getBody());
+                }
+        }
 
-    @Test
-    @DisplayName("Should reject webhook verification with wrong token")
-    void verifyWebhook_shouldReturn403_whenTokenDoesNotMatch() {
-        // Act
-        var response = controller.verifyWebhook("subscribe", "wrong-token", "challenge123");
+        @Test
+        @DisplayName("Should accept POST webhook and return 200 immediately")
+        void handleWebhook_shouldReturn200Immediately() {
+                // Arrange — minimal valid payload (no messages)
+                var payload = java.util.Map.<String, Object>of(
+                                "object", "whatsapp_business_account",
+                                "entry", java.util.List.of());
 
-        // Assert
-        assertEquals(403, response.getStatusCode().value());
-    }
+                // Act
+                var response = controller.handleWebhook(payload);
 
-    @Test
-    @DisplayName("Should reject webhook verification with wrong mode")
-    void verifyWebhook_shouldReturn403_whenModeIsNotSubscribe() {
-        // Act
-        var response = controller.verifyWebhook("unsubscribe", "my-secret-verify-token", "challenge123");
-
-        // Assert
-        assertEquals(403, response.getStatusCode().value());
-    }
-
-    @Test
-    @DisplayName("Should accept POST webhook and return 200 immediately")
-    void handleWebhook_shouldReturn200Immediately() {
-        // Arrange — minimal valid payload (no messages)
-        var payload = java.util.Map.<String, Object>of(
-                "object", "whatsapp_business_account",
-                "entry", java.util.List.of());
-
-        // Act
-        var response = controller.handleWebhook(payload);
-
-        // Assert — should respond immediately with 200
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals("EVENT_RECEIVED", response.getBody());
-    }
+                // Assert — should respond immediately with 200
+                assertEquals(200, response.getStatusCode().value());
+                assertEquals("EVENT_RECEIVED", response.getBody());
+        }
 }
