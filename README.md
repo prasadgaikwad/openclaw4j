@@ -208,17 +208,7 @@ graph TD
 
 ### WhatsApp Setup
 
-1. Create a [Meta Developer Account](https://developers.facebook.com/) and a WhatsApp Business App.
-2. In the App Dashboard, go to **WhatsApp → API Setup** to get your **Phone Number ID** and **Access Token**.
-3. Set environment variables:
-   ```bash
-   export WHATSAPP_ACCESS_TOKEN=your-access-token
-   export WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
-   export WHATSAPP_VERIFY_TOKEN=any-random-string-you-choose
-   ```
-4. Configure the webhook URL in the Meta Dashboard: `https://your-domain/whatsapp/webhook`
-   - For local development, use [ngrok](https://ngrok.com/): `ngrok http 8080`
-5. Subscribe to the `messages` webhook field.
+> 📝 **Step-by-step guide:** See [docs/setup/WHATSAPP_SETUP.md](./docs/setup/WHATSAPP_SETUP.md) for detailed instructions on creating your Meta App and configuring webhooks.
 
 ### Configuring LLM Providers
 
