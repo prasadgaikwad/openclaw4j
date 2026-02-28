@@ -11,6 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -102,13 +105,14 @@ class SlackChannelAdapterTest {
                 assertEquals("1234567890.123456", capturedRequest.getThreadTs());
         }
 
-        @Test
+        @ParameterizedTest(name = "Should handle Slack API error: {0}")
+        @ValueSource(strings = { "channel_not_found", "invalid_auth", "rate_limited" })
         @DisplayName("Should handle Slack API errors gracefully")
-        void sendMessage_shouldHandleApiErrors() throws IOException, SlackApiException {
+        void sendMessage_shouldHandleApiErrors(String errorCode) throws IOException, SlackApiException {
                 // Arrange — mock an error response
                 var response = new ChatPostMessageResponse();
                 response.setOk(false);
-                response.setError("channel_not_found");
+                response.setError(errorCode);
                 when(mockMethodsClient.chatPostMessage(any(ChatPostMessageRequest.class)))
                                 .thenReturn(response);
 

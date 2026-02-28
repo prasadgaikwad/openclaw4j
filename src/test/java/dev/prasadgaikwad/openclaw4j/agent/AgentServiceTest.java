@@ -114,4 +114,32 @@ class AgentServiceTest {
                 assertEquals(threadId, outbound.threadId());
                 verify(shortTermMemory).getHistory("1234567890.123456"); // Uses threadId as context
         }
+
+        @Test
+        @DisplayName("Process should handle WhatsApp messages correctly")
+        void process_shouldHandleWhatsAppMessages() {
+                // Arrange
+                var inbound = new InboundMessage(
+                                "1234567890",
+                                Optional.empty(),
+                                "WA_USER_ID",
+                                "Hello WhatsApp!",
+                                new ChannelType.WhatsApp("PHONE_ID"),
+                                Instant.now(),
+                                Map.of());
+
+                var profile = new AgentProfile("Prasad", "Helpful", "Prompt", Collections.emptyMap());
+                when(profileService.getProfile()).thenReturn(profile);
+                when(memoryService.getRelevantMemories()).thenReturn(Collections.emptyList());
+                when(shortTermMemory.getHistory(any())).thenReturn(Collections.emptyList());
+                when(agentPlanner.plan(any())).thenReturn("WhatsApp response");
+
+                // Act
+                var outbound = agentService.process(inbound);
+
+                // Assert
+                assertEquals("WhatsApp response", outbound.content());
+                assertInstanceOf(ChannelType.WhatsApp.class, outbound.destination());
+                assertEquals("PHONE_ID", ((ChannelType.WhatsApp) outbound.destination()).phoneNumberId());
+        }
 }
