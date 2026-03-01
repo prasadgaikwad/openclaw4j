@@ -74,42 +74,41 @@ public class AgentPlanner {
     public String plan(AgentContext context) {
         logger.debug("Planning response for context with {} history messages", context.conversationHistory().size());
 
-        String systemPromptText = context.profile().systemPrompt();
-        if (systemPromptText == null || systemPromptText.isEmpty()) {
-            systemPromptText = """
-                    You are OpenClaw4J, a powerful and autonomous AI agent.
-                    Your goal is to complete tasks efficiently by coordinating multiple tools if necessary.
+        // 1. Mandatory Agent Rules (always included)
+        String coreInstructions = """
 
-                    ### Multi-Step Planning (Compound Tasks):
-                    1. ANALYZE the user request carefully.
-                    2. BREAK DOWN complex requests into logical steps.
-                    3. EXECUTE tools sequentially, using the observation from one step to inform the next.
-                    4. SUMMARIZE the final results clearly for the user.
+                ### MANDATORY AGENT RULES:
+                1. ANALYZE the user request carefully.
+                2. BREAK DOWN complex requests into logical steps.
+                3. EXECUTE tools sequentially, using observations to inform next steps.
+                4. SUMMARIZE: After calling tools, you MUST synthesize the results into a final, helpful answer for the user. Do not return empty or just tool outputs.
 
-                    If a task requires multiple tool calls, do not hesitate to invoke them one after another in your reasoning loop.
-                    """;
+                If a task requires multiple tool calls, do not hesitate to invoke them.
+                """;
+
+        String systemPromptIdentity = context.profile().systemPrompt();
+        if (systemPromptIdentity == null || systemPromptIdentity.isBlank()) {
+            systemPromptIdentity = "You are OpenClaw4J, a powerful and autonomous AI agent.";
         }
 
-        // 1. Prepare messages
-        List<Message> messages = new ArrayList<>();
-
-        StringBuilder fullSystemPrompt = new StringBuilder(systemPromptText);
+        StringBuilder fullSystemPrompt = new StringBuilder(systemPromptIdentity);
+        fullSystemPrompt.append(coreInstructions);
 
         // Append Long-Term Memory (Slice 4)
         List<String> memories = context.memory().relevantMemories();
         if (memories != null && !memories.isEmpty()) {
-            fullSystemPrompt.append("\n\n### Long-Term Memory (Relevant Facts):\n");
+            fullSystemPrompt.append("\n### Long-Term Memory (Relevant Facts):\n");
             memories.forEach(m -> fullSystemPrompt.append("- ").append(m).append("\n"));
         }
 
         // Append Profile Directive (Slice 4)
         context.memory().soulDirective().ifPresent(d -> {
-            fullSystemPrompt.append("\n\n### Soul Directive:\n").append(d).append("\n");
+            fullSystemPrompt.append("\n### Soul Directive:\n").append(d).append("\n");
         });
 
         // Append RAG Documents (Slice 5)
         if (context.ragDocuments() != null && !context.ragDocuments().isEmpty()) {
-            fullSystemPrompt.append("\n\n### Relevant Knowledge (from history/docs):\n");
+            fullSystemPrompt.append("\n### Relevant Knowledge (from history/docs):\n");
             context.ragDocuments().forEach(doc -> {
                 fullSystemPrompt.append("- ").append(doc.getText()).append("\n");
             });
@@ -117,18 +116,19 @@ public class AgentPlanner {
 
         // Append Current Context (Slice 6)
         String nowWithOffset = OffsetDateTime.now().toString();
-        fullSystemPrompt.append("\n\n### Current Context:\n")
+        fullSystemPrompt.append("\n### Current Context:\n")
                 .append("- User ID: ").append(context.message().userId()).append("\n")
                 .append("- Channel ID: ").append(context.message().channelId()).append("\n");
         context.message().threadId()
                 .ifPresent(tid -> fullSystemPrompt.append("- Thread ID: ").append(tid).append("\n"));
-        fullSystemPrompt.append("- Current Time: ").append(nowWithOffset).append("\n")
-                .append("  (Use this as your reference when computing reminder times. ")
-                .append("Always supply 'remindAt' as a full ISO-8601 datetime WITH timezone offset, ")
-                .append("e.g. if current time is 2026-02-19T21:30:00-06:00 and user says ")
-                .append("'in 5 minutes', supply 2026-02-19T21:35:00-06:00)\n");
+        fullSystemPrompt.append("- Current Time: ").append(nowWithOffset).append("\n");
 
-        messages.add(new SystemMessage(fullSystemPrompt.toString()));
+        String finalPrompt = fullSystemPrompt.toString();
+        logger.trace("Final System Prompt: {}", finalPrompt);
+
+        // 2. Prepare messages
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(finalPrompt));
 
         // Add history
         messages.addAll(context.conversationHistory());
