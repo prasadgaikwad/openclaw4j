@@ -77,6 +77,14 @@ openclaw4j:
       token: ${GITHUB_TOKEN:}
       owner: ${GITHUB_OWNER:}
       repo: ${GITHUB_REPO:}
+    search:
+      api-key: ${TAVILY_API_KEY:}
+      enabled: ${SEARCH_ENABLED:false}
+      base-url: ${TAVILY_BASE_URL:https://api.tavily.com}
+      api-path: ${TAVILY_API_PATH:/search}
+      search-depth: ${TAVILY_SEARCH_DEPTH:basic}
+      include-answer: ${TAVILY_INCLUDE_ANSWER:true}
+      max-results: ${TAVILY_MAX_RESULTS:5}
 
 # ─────────────────────────────────────────────
 # Actuator — Health & Monitoring
