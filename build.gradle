@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.10'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.graalvm.buildtools.native' version '0.10.4'
 }
 
 group = 'dev.prasadgaikwad'
@@ -61,6 +62,11 @@ dependencies {
     implementation 'org.springframework.retry:spring-retry'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.aspectj:aspectjweaver'
+
+    // ─────────────────────────────────────────────
+    // Kotlin Reflect (required by Slack SDK Kotlin classes during AOT processing)
+    // ─────────────────────────────────────────────
+    runtimeOnly 'org.jetbrains.kotlin:kotlin-reflect'
 
     // ─────────────────────────────────────────────
     // Testing
