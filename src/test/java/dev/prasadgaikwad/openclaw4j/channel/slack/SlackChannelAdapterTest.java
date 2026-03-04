@@ -61,7 +61,7 @@ class SlackChannelAdapterTest {
                 var outbound = new OutboundMessage(
                                 "C12345",
                                 Optional.empty(),
-                                "Hello from OpenClaw4J!",
+                                "Hello **OpenClaw4J**!",
                                 new ChannelType.Slack("T11111"),
                                 List.of());
 
@@ -74,7 +74,7 @@ class SlackChannelAdapterTest {
 
                 var capturedRequest = captor.getValue();
                 assertEquals("C12345", capturedRequest.getChannel());
-                assertEquals("Hello from OpenClaw4J!", capturedRequest.getText());
+                assertEquals("Hello *OpenClaw4J*!", capturedRequest.getText());
                 assertNull(capturedRequest.getThreadTs(), "Should not have threadTs when no thread");
         }
 

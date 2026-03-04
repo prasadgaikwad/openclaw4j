@@ -3,6 +3,7 @@ package dev.prasadgaikwad.openclaw4j.tool.slack;
 import com.slack.api.methods.MethodsClient;
 import com.slack.api.methods.request.conversations.ConversationsHistoryRequest;
 
+import dev.prasadgaikwad.openclaw4j.channel.slack.SlackFormatter;
 import dev.prasadgaikwad.openclaw4j.tool.AITool;
 
 import org.slf4j.Logger;
@@ -55,7 +56,8 @@ public class SlackTool implements AITool {
     public String postSlackMessage(String channelId, String text) {
         logger.info("Posting Slack message to channel {}: {}", channelId, text);
         try {
-            var response = methodsClient.chatPostMessage(r -> r.channel(channelId).text(text));
+            var formattedText = SlackFormatter.format(text);
+            var response = methodsClient.chatPostMessage(r -> r.channel(channelId).text(formattedText));
             if (response.isOk()) {
                 return "Message posted successfully to channel " + channelId;
             }
