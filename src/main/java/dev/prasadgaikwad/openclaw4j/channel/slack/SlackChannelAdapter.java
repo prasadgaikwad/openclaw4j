@@ -76,7 +76,7 @@ public final class SlackChannelAdapter implements ChannelAdapter {
             // Note how the builder pattern maps cleanly to our record fields.
             var requestBuilder = ChatPostMessageRequest.builder()
                     .channel(message.channelId())
-                    .text(message.content());
+                    .text(SlackFormatter.format(message.content()));
 
             // If the message is part of a thread, reply in that thread.
             // Optional.ifPresent() is a functional way to conditionally apply a value.
