@@ -3,6 +3,7 @@ package dev.prasadgaikwad.openclaw4j.channel.slack;
 import com.slack.api.methods.MethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelAdapter;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
 import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Slack-specific implementation of the {@link ChannelAdapter} interface.
@@ -93,6 +95,87 @@ public final class SlackChannelAdapter implements ChannelAdapter {
         } catch (IOException | SlackApiException e) {
             log.error("Failed to send message to Slack channel={}: {}",
                     message.channelId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Posts a progress indicator message immediately (e.g., "⏳ Thinking...") and
+     * returns the Slack {@code ts} (timestamp) of the posted message.
+     *
+     * <p>
+     * The returned {@code ts} can be passed to
+     * {@link #updateMessage(String, Optional, String, String)} once the agent
+     * has computed its final response, replacing the placeholder in-place.
+     * </p>
+     *
+     * @param channelId the target channel
+     * @param threadId  optional thread to reply in
+     * @param text      the progress indicator text
+     * @return an Optional containing the Slack ts of the posted message, or empty
+     *         if posting failed
+     */
+    @Override
+    public Optional<String> sendProgressMessage(String channelId, Optional<String> threadId, String text) {
+        try {
+            var requestBuilder = ChatPostMessageRequest.builder()
+                    .channel(channelId)
+                    .text(text);
+            threadId.ifPresent(requestBuilder::threadTs);
+
+            var response = methodsClient.chatPostMessage(requestBuilder.build());
+
+            if (response.isOk()) {
+                log.debug("Progress message posted to channel={}, ts={}", channelId, response.getTs());
+                return Optional.ofNullable(response.getTs());
+            } else {
+                log.warn("Failed to post progress message to channel={}: {}", channelId, response.getError());
+                return Optional.empty();
+            }
+        } catch (IOException | SlackApiException e) {
+            log.error("Failed to post progress message to channel={}: {}", channelId, e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Updates a previously posted Slack message in-place with new content.
+     *
+     * <p>
+     * Uses {@code chat.update} to replace the "Thinking..." placeholder with the
+     * final agent response, creating a seamless UX without cluttering the channel
+     * with multiple messages.
+     * </p>
+     *
+     * @param channelId  the channel containing the message to update
+     * @param threadId   optional thread the message belongs to (unused but kept for
+     *                   API symmetry)
+     * @param messageTs  the Slack {@code ts} of the message to update
+     * @param newContent the final response text
+     */
+    @Override
+    public void updateMessage(String channelId, Optional<String> threadId, String messageTs, String newContent) {
+        try {
+            var request = ChatUpdateRequest.builder()
+                    .channel(channelId)
+                    .ts(messageTs)
+                    .text(SlackFormatter.format(newContent))
+                    .build();
+
+            var response = methodsClient.chatUpdate(request);
+
+            if (response.isOk()) {
+                log.debug("Message updated in channel={}, ts={}", channelId, messageTs);
+            } else {
+                log.error("Failed to update Slack message in channel={}, ts={}: {}",
+                        channelId, messageTs, response.getError());
+                // Fallback: post a new message so the user still gets the answer
+                sendMessage(OutboundMessage.textReply(channelId, threadId, newContent, channelType()));
+            }
+        } catch (IOException | SlackApiException e) {
+            log.error("Failed to update Slack message in channel={}, ts={}: {}",
+                    channelId, messageTs, e.getMessage(), e);
+            // Fallback: post a new message so the user still gets the answer
+            sendMessage(OutboundMessage.textReply(channelId, threadId, newContent, channelType()));
         }
     }
 

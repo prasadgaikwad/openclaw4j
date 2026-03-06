@@ -3,7 +3,9 @@ package dev.prasadgaikwad.openclaw4j.channel.slack;
 import com.slack.api.methods.MethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
+import com.slack.api.methods.response.chat.ChatUpdateResponse;
 import dev.prasadgaikwad.openclaw4j.channel.ChannelType;
 import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,5 +150,84 @@ class SlackChannelAdapterTest {
         void channelType_shouldBeSlack() {
                 var type = adapter.channelType();
                 assertInstanceOf(ChannelType.Slack.class, type);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Tests for the streaming / post-then-update UX flow
+        // ─────────────────────────────────────────────────────────
+
+        @Test
+        @DisplayName("sendProgressMessage should post message and return its ts")
+        void sendProgressMessage_shouldReturnTs() throws IOException, SlackApiException {
+                // Arrange
+                var response = new ChatPostMessageResponse();
+                response.setOk(true);
+                response.setTs("1234567890.000001");
+                when(mockMethodsClient.chatPostMessage(any(ChatPostMessageRequest.class)))
+                                .thenReturn(response);
+
+                // Act
+                Optional<String> ts = adapter.sendProgressMessage("C12345", Optional.empty(), "⏳ Thinking...");
+
+                // Assert
+                assertTrue(ts.isPresent(), "should return the message ts when posting succeeds");
+                assertEquals("1234567890.000001", ts.get());
+        }
+
+        @Test
+        @DisplayName("sendProgressMessage should return empty Optional on API failure")
+        void sendProgressMessage_shouldReturnEmptyOnFailure() throws IOException, SlackApiException {
+                // Arrange — simulate a failed API response
+                var response = new ChatPostMessageResponse();
+                response.setOk(false);
+                response.setError("channel_not_found");
+                when(mockMethodsClient.chatPostMessage(any(ChatPostMessageRequest.class)))
+                                .thenReturn(response);
+
+                // Act
+                Optional<String> ts = adapter.sendProgressMessage("C_INVALID", Optional.empty(), "⏳ Thinking...");
+
+                // Assert
+                assertTrue(ts.isEmpty(), "should return empty Optional when posting fails");
+        }
+
+        @Test
+        @DisplayName("updateMessage should call chat.update with correct parameters")
+        void updateMessage_shouldCallChatUpdate() throws IOException, SlackApiException {
+                // Arrange
+                var response = new ChatUpdateResponse();
+                response.setOk(true);
+                when(mockMethodsClient.chatUpdate(any(ChatUpdateRequest.class))).thenReturn(response);
+
+                // Act
+                adapter.updateMessage("C12345", Optional.empty(), "1234567890.000001", "Here is my answer!");
+
+                // Assert — verify chat.update was called with the right ts
+                var captor = ArgumentCaptor.forClass(ChatUpdateRequest.class);
+                verify(mockMethodsClient).chatUpdate(captor.capture());
+
+                var captured = captor.getValue();
+                assertEquals("C12345", captured.getChannel());
+                assertEquals("1234567890.000001", captured.getTs());
+        }
+
+        @Test
+        @DisplayName("updateMessage should fall back to sendMessage on IOException")
+        void updateMessage_shouldFallbackOnIOException() throws IOException, SlackApiException {
+                // Arrange — chat.update fails, chat.postMessage succeeds
+                when(mockMethodsClient.chatUpdate(any(ChatUpdateRequest.class)))
+                                .thenThrow(new IOException("Network error"));
+
+                var postResponse = new ChatPostMessageResponse();
+                postResponse.setOk(true);
+                when(mockMethodsClient.chatPostMessage(any(ChatPostMessageRequest.class)))
+                                .thenReturn(postResponse);
+
+                // Act — should not throw; should fall back to posting a new message
+                assertDoesNotThrow(() -> adapter.updateMessage(
+                                "C12345", Optional.empty(), "1234567890.000001", "Fallback answer"));
+
+                // Assert — fallback sendMessage was called
+                verify(mockMethodsClient, times(1)).chatPostMessage(any(ChatPostMessageRequest.class));
         }
 }
