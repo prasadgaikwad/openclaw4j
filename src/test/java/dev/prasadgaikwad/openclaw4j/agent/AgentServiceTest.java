@@ -42,15 +42,12 @@ class AgentServiceTest {
         @Mock
         private ToolRegistry toolRegistry;
 
-        @Mock
-        private dev.prasadgaikwad.openclaw4j.rag.RAGService ragService;
-
         private AgentService agentService;
 
         @BeforeEach
         void setUp() {
                 agentService = new AgentService(agentPlanner, shortTermMemory, memoryService, profileService,
-                                toolRegistry, ragService);
+                                toolRegistry);
         }
 
         @Test
