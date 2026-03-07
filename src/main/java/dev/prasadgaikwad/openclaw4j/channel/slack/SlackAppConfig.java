@@ -165,14 +165,33 @@ public class SlackAppConfig {
                             Map.of("slackTs", event.getTs() != null ? event.getTs() : ""));
 
                     // ─────────────────────────────────────────
-                    // Step 2: Process — Delegate to the agent service
+                    // Step 2: Post immediate "Thinking..." progress indicator.
+                    // Slack requires ack within 3s; we post this fast so the user
+                    // knows the agent is working, even if LLM takes 5–15 seconds.
+                    // ─────────────────────────────────────────
+                    var progressTs = channelAdapter.sendProgressMessage(
+                            inboundMessage.channelId(),
+                            inboundMessage.threadId(),
+                            "⏳ Thinking...");
+
+                    // ─────────────────────────────────────────
+                    // Step 3: Process — Delegate to the agent service (blocking call)
                     // ─────────────────────────────────────────
                     var outboundMessage = agentService.process(inboundMessage);
 
                     // ─────────────────────────────────────────
-                    // Step 3: Respond — Send the response back via the channel adapter
+                    // Step 4: Respond — Update the placeholder in-place if we have its ts,
+                    // otherwise fall back to posting a new message.
                     // ─────────────────────────────────────────
-                    channelAdapter.sendMessage(outboundMessage);
+                    if (progressTs.isPresent()) {
+                        channelAdapter.updateMessage(
+                                inboundMessage.channelId(),
+                                inboundMessage.threadId(),
+                                progressTs.get(),
+                                outboundMessage.content());
+                    } else {
+                        channelAdapter.sendMessage(outboundMessage);
+                    }
 
                 } catch (Exception e) {
                     log.error("Error processing async Slack event", e);
