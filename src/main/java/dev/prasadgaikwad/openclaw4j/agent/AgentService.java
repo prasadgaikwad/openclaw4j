@@ -7,7 +7,6 @@ import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
 import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
 import dev.prasadgaikwad.openclaw4j.memory.MemoryService;
 import dev.prasadgaikwad.openclaw4j.memory.ProfileService;
-import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -61,23 +60,17 @@ public class AgentService {
         private final MemoryService memoryService;
         private final ProfileService profileService;
         private final ToolRegistry toolRegistry;
-        private final RAGService ragService;
-
-        @org.springframework.beans.factory.annotation.Value("${openclaw4j.rag.enabled:false}")
-        private boolean ragEnabled;
 
         public AgentService(AgentPlanner agentPlanner,
                         ShortTermMemory shortTermMemory,
                         MemoryService memoryService,
                         ProfileService profileService,
-                        ToolRegistry toolRegistry,
-                        RAGService ragService) {
+                        ToolRegistry toolRegistry) {
                 this.agentPlanner = agentPlanner;
                 this.shortTermMemory = shortTermMemory;
                 this.memoryService = memoryService;
                 this.profileService = profileService;
                 this.toolRegistry = toolRegistry;
-                this.ragService = ragService;
         }
 
         /**
@@ -105,10 +98,8 @@ public class AgentService {
                 var profile = profileService.getProfile();
                 var relevantMemories = memoryService.getRelevantMemories();
 
-                // 3b. Load Relevant Documents from RAG (Slice 5)
-                var ragDocs = ragEnabled
-                                ? ragService.findRelevantDocuments(message.content())
-                                : List.<Document>of();
+                // 3b. Local Document search is handled exclusively via Tools
+                var ragDocs = List.<Document>of();
 
                 var memorySnapshot = new MemorySnapshot(
                                 relevantMemories,
