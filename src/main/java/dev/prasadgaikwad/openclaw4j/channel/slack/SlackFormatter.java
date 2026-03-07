@@ -17,18 +17,19 @@ public final class SlackFormatter {
     // Regex for [text](url) -> <url|text>
     private static final Pattern LINK_PATTERN = Pattern.compile("\\[([^\\]]+)\\]\\(([^\\)]+)\\)");
 
-    // Regex for bold **text** or __text__ -> *text*
-    private static final Pattern BOLD_PATTERN = Pattern.compile("(\\*\\*|__)(.*?)\\1");
+    // Regex for bold **text** or __text__ -> *text* (multiline support)
+    private static final Pattern BOLD_PATTERN = Pattern.compile("(?s)(\\*\\*|__)(.*?)\\1");
 
     // Regex for italic *text* or _text_ -> _text_
     // Note: This is simpler because Slack uses _ for italic, same as one variety of
     // standard Markdown.
     // However, standard Markdown also uses * for italic, which Slack uses for bold.
-    private static final Pattern ITALIC_STAR_PATTERN = Pattern.compile("(?<!\\*)\\*([^\\*]+)\\*(?!\\*)");
+    private static final Pattern ITALIC_STAR_PATTERN = Pattern.compile("(?s)(?<!\\*)\\*([^\\*]+)\\*(?!\\*)");
 
     // Regex for headers ### Header -> *Header*
-    // Slack doesn't have true headers, so we bold them.
-    private static final Pattern HEADER_PATTERN = Pattern.compile("(?m)^#{1,6}\\s+(.*)$");
+    // Slack doesn't have true headers, so we bold them. Covers trailing
+    // spaces/newlines
+    private static final Pattern HEADER_PATTERN = Pattern.compile("(?m)^#{1,6}\\s+(.*?)\\s*$");
 
     private SlackFormatter() {
         // Utility class
