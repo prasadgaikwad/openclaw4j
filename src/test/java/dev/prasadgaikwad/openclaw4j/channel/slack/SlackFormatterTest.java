@@ -18,7 +18,10 @@ class SlackFormatterTest {
             "'### Header', '*Header*'",
             "'# Main Title', '*Main Title*'",
             "'Mixed **bold** and *italic*', 'Mixed *bold* and _italic_'",
-            "'[Link](url) with **bold**', '<url|Link> with *bold*'"
+            "'[Link](url) with **bold**', '<url|Link> with *bold*'",
+            "'**multiline\nbold**', '*multiline\nbold*'",
+            "'### Header with space  ', '*Header with space*'",
+            "'*multiline\nitalic*', '_multiline\nitalic_'",
     })
     @DisplayName("Should correctly format various Markdown elements to Slack mrkdwn")
     void format_shouldConvertMarkdownToMrkdwn(String input, String expected) {
