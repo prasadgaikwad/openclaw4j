@@ -1,5 +1,9 @@
 package dev.prasadgaikwad.openclaw4j.memory;
 
+import com.knuddels.jtokkit.Encodings;
+import com.knuddels.jtokkit.api.Encoding;
+import com.knuddels.jtokkit.api.EncodingRegistry;
+import com.knuddels.jtokkit.api.EncodingType;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.stereotype.Component;
 
@@ -20,20 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  *
  * <p>
- * To manage resource consumption, the memory implements a simple sliding-window
- * eviction policy, retaining only the last {@value #MAX_HISTORY_SIZE} messages
- * per context.
+ * To manage resource consumption, the memory implements a token-aware context
+ * management strategy, retaining messages until the total token count exceeds
+ * {@value #MAX_TOKENS_FOR_HISTORY}.
  * </p>
- *
- * <h3>Usage Example:</h3>
- * 
- * <pre>
- * // Storing a message
- * shortTermMemory.addMessage("C12345", new UserMessage("Hello!"));
- *
- * // Retrieving history
- * List&lt;Message&gt; history = shortTermMemory.getHistory("C12345");
- * </pre>
  *
  * @author Prasad Gaikwad
  */
@@ -41,7 +35,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ShortTermMemory {
 
     private final Map<String, List<Message>> conversationHistory = new ConcurrentHashMap<>();
-    private static final int MAX_HISTORY_SIZE = 50; // Simple eviction policy
+    private static final int MAX_TOKENS_FOR_HISTORY = 4000;
+    private final Encoding encoding;
+
+    public ShortTermMemory() {
+        EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
+        // O200K_BASE is used by GPT-4o models
+        this.encoding = registry.getEncoding(EncodingType.O200K_BASE);
+    }
 
     public void addMessage(String contextId, Message message) {
         conversationHistory.compute(contextId, (key, history) -> {
@@ -49,9 +50,16 @@ public class ShortTermMemory {
                 history = new ArrayList<>();
             }
             history.add(message);
-            // Simple eviction: keep last N messages
-            if (history.size() > MAX_HISTORY_SIZE) {
-                return new ArrayList<>(history.subList(history.size() - MAX_HISTORY_SIZE, history.size()));
+
+            int currentTokens = countTokens(history);
+
+            // Dynamic eviction: drop oldest messages while preserving the total token limit
+            // We keep at least one message (the most recent one) even if it's very large
+            while (currentTokens > MAX_TOKENS_FOR_HISTORY && history.size() > 1) {
+                Message removed = history.remove(0);
+                if (removed.getText() != null) {
+                    currentTokens -= encoding.countTokens(removed.getText());
+                }
             }
             return history;
         });
@@ -63,5 +71,16 @@ public class ShortTermMemory {
 
     public void clear(String contextId) {
         conversationHistory.remove(contextId);
+    }
+
+    private int countTokens(List<Message> messages) {
+        int total = 0;
+        for (Message msg : messages) {
+            String content = msg.getText();
+            if (content != null) {
+                total += encoding.countTokens(content);
+            }
+        }
+        return total;
     }
 }
