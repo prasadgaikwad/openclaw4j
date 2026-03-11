@@ -66,6 +66,8 @@ openclaw4j:
       phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
       verify-token: ${WHATSAPP_VERIFY_TOKEN:}
       api-version: v21.0
+    console:
+      enabled: ${CONSOLE_ENABLED:false}
   ai:
     # Options: openai, ollama
     provider: ollama

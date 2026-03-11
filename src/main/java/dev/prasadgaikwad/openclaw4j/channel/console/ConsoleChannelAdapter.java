@@ -8,6 +8,7 @@ import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -41,6 +42,7 @@ import java.util.concurrent.Executors;
  * @see CommandLineRunner
  */
 @Component
+@ConditionalOnProperty(name = "openclaw4j.channel.console.enabled", havingValue = "true")
 public class ConsoleChannelAdapter implements ChannelAdapter, CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(ConsoleChannelAdapter.class);
