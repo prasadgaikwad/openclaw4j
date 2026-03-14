@@ -5,6 +5,7 @@ import dev.prasadgaikwad.openclaw4j.channel.OutboundMessage;
 import dev.prasadgaikwad.openclaw4j.memory.MemorySnapshot;
 import dev.prasadgaikwad.openclaw4j.memory.ShortTermMemory;
 import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
+import dev.prasadgaikwad.openclaw4j.tool.ToolResultStore;
 import dev.prasadgaikwad.openclaw4j.memory.MemoryService;
 import dev.prasadgaikwad.openclaw4j.memory.ProfileService;
 import org.slf4j.Logger;
@@ -134,12 +135,14 @@ public class AgentService {
                         responseText = "I encountered an error while trying to process your request. Please try again in a few moments or rephrase your request.";
                 } finally {
                         ReminderContext.clear();
+                        ToolResultStore.clear();
                 }
 
                 // Fallback for empty responses to avoid IllegalArgumentException in
                 // OutboundMessage
                 if (responseText == null || responseText.isBlank()) {
-                        log.warn("Agent generated an empty response in session {}. Using fallback message.", contextId);
+                        log.warn("Agent generated an empty response in session {} for message: '{}'. Using fallback message.", 
+                                contextId, truncate(message.content(), 50));
                         responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
                 }
 
