@@ -79,7 +79,13 @@ public class SearchTool implements AITool {
             }
 
             String results = response.results().stream()
-                    .map(r -> String.format("Title: %s\nURL: %s\nContent: %s", r.title(), r.url(), r.content()))
+                    .map(r -> {
+                        String content = r.content();
+                        if (content != null && content.length() > 500) {
+                            content = content.substring(0, 500) + "... [truncated]";
+                        }
+                        return String.format("Title: %s\nURL: %s\nContent: %s", r.title(), r.url(), content);
+                    })
                     .collect(Collectors.joining("\n\n---\n\n"));
 
             sb.append("Search Results:\n").append(results);

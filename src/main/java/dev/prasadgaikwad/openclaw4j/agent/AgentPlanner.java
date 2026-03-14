@@ -11,6 +11,8 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
+import dev.prasadgaikwad.openclaw4j.tool.ToolResultStore;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,12 +80,13 @@ public class AgentPlanner {
         String coreInstructions = """
 
                 ### MANDATORY AGENT RULES:
-                1. ANALYZE the user request carefully.
-                2. BREAK DOWN complex requests into logical steps.
-                3. EXECUTE tools sequentially, using observations to inform next steps.
-                4. SUMMARIZE: After calling tools, you MUST synthesize the results into a final, helpful answer for the user. NEVER return empty or just tool outputs.
-
-                If a task requires multiple tool calls, do not hesitate to invoke them.
+                1. ANALYZE: Carefully read the user request and any context.
+                2. BREAK DOWN: Split complex tasks into logical, sequential steps.
+                3. TOOL USAGE: Execute tools one by one. Use the results of each tool to decide your next move.
+                4. FINAL SYNTHESIS (CRITICAL): Once you have enough information, you MUST provide a final, helpful, and concise answer to the user.
+                   - NEVER end your response with just tool JSON or empty content.
+                   - If you used search results, summarize them in your own words.
+                   - Even if the task is complete, say so explicitly.
                 """;
 
         String systemPromptIdentity = context.profile().systemPrompt();
@@ -145,7 +148,9 @@ public class AgentPlanner {
                 .call()
                 .content();
 
-        logger.debug("Generated response: {}", response);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Primary LLM response: {}", truncate(response, 200));
+        }
 
         // ── Option 3: Recovery re-prompt ──────────────────────────────────────────
         // If the primary call returned an empty response (model forgot to synthesize
@@ -154,48 +159,58 @@ public class AgentPlanner {
         // cases, but the recovery ensures the user always gets a meaningful reply.
         if (response == null || response.isBlank()) {
             logger.warn("Primary LLM response was empty — firing recovery re-prompt to summarize tool results.");
-            response = fireRecoveryPrompt(context.message().content());
+            response = fireRecoveryPrompt(context.message().content(), ToolResultStore.get());
         }
 
         return response;
     }
 
     /**
-     * A minimal follow-up LLM call used when the primary planning response is
-     * empty.
+     * A follow-up LLM call used when the primary planning response is empty.
      *
      * <p>
-     * This recovery prompt does NOT include tool callbacks (to avoid re-executing
-     * tools). Its sole purpose is to ask the model to describe what it just did
-     * in the conversation so the user gets a meaningful confirmation.
+     * When tool results are available (e.g. from {@link dev.prasadgaikwad.openclaw4j.tool.ToolResultStore}),
+     * they are embedded directly into the system prompt so the model can
+     * produce an accurate synthesis rather than a generic confirmation.
      * </p>
      *
      * @param originalUserInput the original message from the user
-     * @return a non-empty summary string, or a safe fallback if the recovery also
-     *         fails
+     * @param toolResults       the raw tool output captured during the ReAct loop,
+     *                          or {@code null} if no tool was called
+     * @return a non-empty summary string, or a safe fallback if the recovery also fails
      */
     @SuppressWarnings("null")
-    private String fireRecoveryPrompt(String originalUserInput) {
+    private String fireRecoveryPrompt(String originalUserInput, String toolResults) {
         try {
-            String recoverySystemPrompt = """
-                    You are a helpful assistant. You just executed one or more tool calls in response \
-                    to a user request. Write a brief, friendly confirmation sentence summarising \
-                    what you just did. Be specific and concise. Do not use bullet points.
-                    """;
+            StringBuilder recoverySystemPromptBuilder = new StringBuilder(
+                    "You are a helpful assistant. The user asked a question and a tool was executed "
+                    + "to answer it. Your job is to write a clear, friendly, and concise response "
+                    + "to the user based on the information below.");
+
+            if (toolResults != null && !toolResults.isBlank()) {
+                recoverySystemPromptBuilder
+                        .append("\n\n### Tool Results:\n")
+                        .append(toolResults)
+                        .append("\n\nUsing only the information above, answer the user's question. "
+                                + "Be specific, informative, and concise. Do not say that you 'fetched' "
+                                + "or 'searched' for results — just present the information naturally.");
+            } else {
+                recoverySystemPromptBuilder
+                        .append(" Summarise what you just did in one or two sentences. Be specific and concise.");
+            }
 
             String recoveryUserPrompt = String.format(
-                    "I asked you: \"%s\". What did you just do for me? Confirm the action in one or two sentences.",
-                    originalUserInput);
+                    "User's original request: \"%s\"", originalUserInput);
 
             String recovered = chatClient.prompt()
                     .messages(
-                            new SystemMessage(recoverySystemPrompt),
+                            new SystemMessage(recoverySystemPromptBuilder.toString()),
                             new UserMessage(recoveryUserPrompt))
                     .call()
                     .content();
 
             if (recovered != null && !recovered.isBlank()) {
-                logger.info("Recovery re-prompt succeeded: {}", recovered);
+                logger.info("Recovery re-prompt succeeded: {}", truncate(recovered, 200));
                 return recovered;
             }
         } catch (Exception e) {
@@ -203,6 +218,15 @@ public class AgentPlanner {
         }
 
         // Ultimate fallback if recovery also produces nothing
-        return "I've completed your request successfully.";
+        return "I've completed your request successfully. Is there anything specific from the results you'd like me to clarify?";
+    }
+
+    /**
+     * Truncates a string for logging.
+     */
+    private String truncate(String text, int maxLength) {
+        if (text == null)
+            return "";
+        return text.length() <= maxLength ? text : text.substring(0, maxLength) + "...";
     }
 }
