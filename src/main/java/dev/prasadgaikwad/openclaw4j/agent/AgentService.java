@@ -8,6 +8,8 @@ import dev.prasadgaikwad.openclaw4j.tool.ToolRegistry;
 import dev.prasadgaikwad.openclaw4j.tool.ToolResultStore;
 import dev.prasadgaikwad.openclaw4j.memory.MemoryService;
 import dev.prasadgaikwad.openclaw4j.memory.ProfileService;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -61,17 +63,20 @@ public class AgentService {
         private final MemoryService memoryService;
         private final ProfileService profileService;
         private final ToolRegistry toolRegistry;
+        private final ObservationRegistry observationRegistry;
 
         public AgentService(AgentPlanner agentPlanner,
                         ShortTermMemory shortTermMemory,
                         MemoryService memoryService,
                         ProfileService profileService,
-                        ToolRegistry toolRegistry) {
+                        ToolRegistry toolRegistry,
+                        ObservationRegistry observationRegistry) {
                 this.agentPlanner = agentPlanner;
                 this.shortTermMemory = shortTermMemory;
                 this.memoryService = memoryService;
                 this.profileService = profileService;
                 this.toolRegistry = toolRegistry;
+                this.observationRegistry = observationRegistry;
         }
 
         /**
@@ -126,42 +131,47 @@ public class AgentService {
                                 message.userId(),
                                 message.source()));
 
-                // 6. Plan and Generate Response
-                String responseText;
-                try {
-                        responseText = agentPlanner.plan(context);
-                } catch (Exception e) {
-                        log.error("Error during agent planning for session {}: {}", contextId, e.getMessage(), e);
-                        responseText = "I encountered an error while trying to process your request. Please try again in a few moments or rephrase your request.";
-                } finally {
-                        ReminderContext.clear();
-                        ToolResultStore.clear();
-                }
+                return Observation.createNotStarted("agent.process", observationRegistry)
+                                .contextualName("agent-process-" + message.source())
+                                .lowCardinalityKeyValue("channel", message.channelId())
+                                .observe(() -> {
+                                        // 6. Plan and Generate Response
+                                        String responseText;
+                                        try {
+                                                responseText = agentPlanner.plan(context);
+                                        } catch (Exception e) {
+                                                log.error("Error during agent planning for session {}: {}", contextId, e.getMessage(), e);
+                                                responseText = "I encountered an error while trying to process your request. Please try again in a few moments or rephrase your request.";
+                                        } finally {
+                                                ReminderContext.clear();
+                                                ToolResultStore.clear();
+                                        }
 
-                // Fallback for empty responses to avoid IllegalArgumentException in
-                // OutboundMessage
-                if (responseText == null || responseText.isBlank()) {
-                        log.warn("Agent generated an empty response in session {} for message: '{}'. Using fallback message.", 
-                                contextId, truncate(message.content(), 50));
-                        responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
-                }
+                                        // Fallback for empty responses to avoid IllegalArgumentException in
+                                        // OutboundMessage
+                                        if (responseText == null || responseText.isBlank()) {
+                                                log.warn("Agent generated an empty response in session {} for message: '{}'. Using fallback message.",
+                                                                contextId, truncate(message.content(), 50));
+                                                responseText = "I've processed your request, but I don't have a specific response to provide at the moment. Is there anything else I can help with?";
+                                        }
 
-                // 6. Update Short-Term Memory
-                shortTermMemory.addMessage(contextId, new UserMessage(message.content()));
-                shortTermMemory.addMessage(contextId, new AssistantMessage(responseText));
+                                        // 6. Update Short-Term Memory
+                                        shortTermMemory.addMessage(contextId, new UserMessage(message.content()));
+                                        shortTermMemory.addMessage(contextId, new AssistantMessage(responseText));
 
-                // 7. Log raw event to daily memory (Slice 4)
-                memoryService.logEvent(String.format("Interaction with %s: Input='%s' | Response='%s'",
-                                message.userId(), truncate(message.content(), 50), truncate(responseText, 50)));
+                                        // 7. Log raw event to daily memory (Slice 4)
+                                        memoryService.logEvent(String.format("Interaction with %s: Input='%s' | Response='%s'",
+                                                        message.userId(), truncate(message.content(), 50), truncate(responseText, 50)));
 
-                log.info("Agent response for channel={}: {}",
-                                message.channelId(), truncate(responseText, 100));
+                                        log.info("Agent response for channel={}: {}",
+                                                        message.channelId(), truncate(responseText, 100));
 
-                return OutboundMessage.textReply(
-                                message.channelId(),
-                                message.threadId(),
-                                responseText,
-                                message.source());
+                                        return OutboundMessage.textReply(
+                                                        message.channelId(),
+                                                        message.threadId(),
+                                                        responseText,
+                                                        message.source());
+                                });
         }
 
         /**

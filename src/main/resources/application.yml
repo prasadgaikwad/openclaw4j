@@ -92,10 +92,20 @@ openclaw4j:
 # Actuator — Health & Monitoring
 # ─────────────────────────────────────────────
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        all: true
   endpoint:
     health:
       show-details: always

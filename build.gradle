@@ -63,6 +63,13 @@ dependencies {
     implementation 'org.aspectj:aspectjweaver'
 
     // ─────────────────────────────────────────────
+    // Observability
+    // ─────────────────────────────────────────────
+    // Micrometer Tracing
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+
+    // ─────────────────────────────────────────────
     // Testing
     // ─────────────────────────────────────────────
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
