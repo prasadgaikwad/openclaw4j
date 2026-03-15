@@ -7,6 +7,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import io.micrometer.observation.annotation.Observed;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
@@ -73,6 +74,7 @@ public class AgentPlanner {
      */
     @SuppressWarnings("null")
     @Retryable(retryFor = { Exception.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @Observed(name = "agent.planner", contextualName = "agent-planning")
     public String plan(AgentContext context) {
         logger.debug("Planning response for context with {} history messages", context.conversationHistory().size());
 

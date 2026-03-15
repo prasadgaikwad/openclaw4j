@@ -42,12 +42,15 @@ class AgentServiceTest {
         @Mock
         private ToolRegistry toolRegistry;
 
+        private io.micrometer.observation.ObservationRegistry observationRegistry;
+
         private AgentService agentService;
 
         @BeforeEach
         void setUp() {
+                observationRegistry = io.micrometer.observation.ObservationRegistry.NOOP;
                 agentService = new AgentService(agentPlanner, shortTermMemory, memoryService, profileService,
-                                toolRegistry);
+                                toolRegistry, observationRegistry);
         }
 
         @Test
