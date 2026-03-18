@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * File-backed implementation of the {@link MemoryService}.
@@ -26,11 +28,20 @@ import java.util.List;
 public class FileMemoryService implements MemoryService {
 
     private static final Logger log = LoggerFactory.getLogger(FileMemoryService.class);
-    private static final Path ROOT_PATH = Path.of(".memory");
-    private static final Path MEMORY_MD = ROOT_PATH.resolve("MEMORY.md");
-    private static final Path DAILY_LOG_DIR = ROOT_PATH.resolve("daily");
+    private final Path ROOT_PATH;
+    private final Path MEMORY_MD;
+    private final Path DAILY_LOG_DIR;
 
     public FileMemoryService() {
+        this(Path.of(".memory"));
+    }
+
+    // visible for testing
+    FileMemoryService(Path rootPath) {
+        this.ROOT_PATH = rootPath;
+        this.MEMORY_MD = ROOT_PATH.resolve("MEMORY.md");
+        this.DAILY_LOG_DIR = ROOT_PATH.resolve("daily");
+
         try {
             Files.createDirectories(DAILY_LOG_DIR);
             if (!Files.exists(MEMORY_MD)) {
@@ -78,6 +89,105 @@ public class FileMemoryService implements MemoryService {
             log.debug("Logged event to daily log: {}", event);
         } catch (IOException e) {
             log.error("Failed to write to daily log", e);
+        }
+    }
+
+    @Override
+    public List<String> searchMemory(String query) {
+        try {
+            if (Files.exists(MEMORY_MD)) {
+                String lowerQuery = query.toLowerCase();
+                return Files.readAllLines(MEMORY_MD).stream()
+                        .filter(line -> !line.startsWith("#") && !line.isBlank())
+                        .filter(line -> line.toLowerCase().contains(lowerQuery))
+                        .toList();
+            }
+        } catch (IOException e) {
+            log.error("Failed to search MEMORY.md", e);
+        }
+        return List.of();
+    }
+
+    @Override
+    public List<String> listHistoryDates() {
+        List<String> dates = new ArrayList<>();
+        try {
+            if (Files.exists(DAILY_LOG_DIR)) {
+                Files.list(DAILY_LOG_DIR)
+                        .filter(p -> p.toString().endsWith(".md"))
+                        .map(p -> p.getFileName().toString().replace(".md", ""))
+                        .sorted()
+                        .forEach(dates::add);
+            }
+        } catch (IOException e) {
+            log.error("Failed to list history dates", e);
+        }
+        return dates;
+    }
+
+    @Override
+    public Optional<String> getHistoryLog(String date) {
+        Path dailyFile = DAILY_LOG_DIR.resolve(date + ".md");
+        try {
+            if (Files.exists(dailyFile)) {
+                return Optional.of(Files.readString(dailyFile));
+            }
+        } catch (IOException e) {
+            log.error("Failed to read history log for date: {}", date, e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean forgetFact(String fact) {
+        try {
+            if (!Files.exists(MEMORY_MD)) {
+                return false;
+            }
+            String lowerFact = fact.toLowerCase();
+            List<String> allLines = Files.readAllLines(MEMORY_MD);
+            List<String> retained = allLines.stream()
+                    .filter(line -> !line.toLowerCase().contains(lowerFact))
+                    .toList();
+            boolean removed = retained.size() < allLines.size();
+            if (removed) {
+                Files.writeString(MEMORY_MD, String.join("\n", retained) + "\n");
+                log.info("Forgot fact matching: {}", fact);
+            }
+            return removed;
+        } catch (IOException e) {
+            log.error("Failed to forget fact from MEMORY.md", e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateFact(String oldFact, String newFact) {
+        try {
+            if (!Files.exists(MEMORY_MD)) {
+                return false;
+            }
+            String lowerOld = oldFact.toLowerCase();
+            List<String> allLines = Files.readAllLines(MEMORY_MD);
+            boolean[] updated = {false};
+            List<String> newLines = allLines.stream()
+                    .map(line -> {
+                        if (!updated[0] && line.toLowerCase().contains(lowerOld)) {
+                            updated[0] = true;
+                            // Preserve the leading "- " bullet if present
+                            return line.startsWith("- ") ? "- " + newFact : newFact;
+                        }
+                        return line;
+                    })
+                    .toList();
+            if (updated[0]) {
+                Files.writeString(MEMORY_MD, String.join("\n", newLines) + "\n");
+                log.info("Updated fact '{}' to '{}'", oldFact, newFact);
+            }
+            return updated[0];
+        } catch (IOException e) {
+            log.error("Failed to update fact in MEMORY.md", e);
+            return false;
         }
     }
 }

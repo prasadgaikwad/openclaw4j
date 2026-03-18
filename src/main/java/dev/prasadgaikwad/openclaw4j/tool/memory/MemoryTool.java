@@ -96,4 +96,81 @@ public class MemoryTool implements AITool {
         memoryService.logEvent(event);
         return "Event has been logged to my daily scratchpad.";
     }
+
+    /**
+     * Searches long-term memory for specific keywords.
+     *
+     * @param query the keyword to search
+     * @return matching facts or a not-found message
+     */
+    @Tool(description = "Searches long-term memory (MEMORY.md) for lines matching a keyword or phrase.")
+    public String searchMemory(String query) {
+        log.info("Agent searching memory for: {}", query);
+        java.util.List<String> results = memoryService.searchMemory(query);
+        if (results.isEmpty()) {
+            return "No matching memories found for: " + query;
+        }
+        return "Found " + results.size() + " matching memories:\n" + String.join("\n", results);
+    }
+
+    /**
+     * Lists available dates in the daily history log.
+     *
+     * @return a formatted list of dates
+     */
+    @Tool(description = "Lists all dates for which a daily history log exists.")
+    public String listHistory() {
+        log.info("Agent requested history dates");
+        java.util.List<String> dates = memoryService.listHistoryDates();
+        if (dates.isEmpty()) {
+            return "No history logs found.";
+        }
+        return "Available history logs for dates:\n" + String.join("\n", dates);
+    }
+
+    /**
+     * Reads the history log for a specific date.
+     *
+     * @param date the date in YYYY-MM-DD format
+     * @return the log content or a not-found message
+     */
+    @Tool(description = "Reads the content of the daily history log for a specific date (YYYY-MM-DD).")
+    public String readHistoryLog(String date) {
+        log.info("Agent reading history for date: {}", date);
+        return memoryService.getHistoryLog(date)
+                .orElse("No history log found for date: " + date);
+    }
+
+    /**
+     * Removes a fact from memory.
+     *
+     * @param fact the fact string to match and remove
+     * @return success or failure message
+     */
+    @Tool(description = "Removes a specific fact from long-term memory (MEMORY.md). Use this to clean up obsolete info.")
+    public String forgetFact(String fact) {
+        log.info("Agent requested to forget fact: {}", fact);
+        if (memoryService.forgetFact(fact)) {
+            return "I have removed that fact from my long-term memory.";
+        } else {
+            return "I could not find a fact matching '" + fact + "' in my memory.";
+        }
+    }
+
+    /**
+     * Updates an existing fact in memory.
+     *
+     * @param oldFact the existing fact to replace
+     * @param newFact the new updated fact
+     * @return success or failure message
+     */
+    @Tool(description = "Replaces an existing fact in long-term memory with a new one. Use to correct or update facts.")
+    public String updateFact(String oldFact, String newFact) {
+        log.info("Agent requested to update fact '{}' to '{}'", oldFact, newFact);
+        if (memoryService.updateFact(oldFact, newFact)) {
+            return "I have successfully updated that fact in my long-term memory.";
+        } else {
+            return "I could not find the old fact '" + oldFact + "' in my memory to update.";
+        }
+    }
 }
