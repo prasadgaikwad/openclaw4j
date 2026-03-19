@@ -104,6 +104,18 @@ User receives agent response
 | **Advanced Heartbeat** | Periodic checks with system-wide event broadcasting |
 | **RAG Toggle** | Feature flag to disable RAG by default (`openclaw4j.rag.enabled`) |
 
+## Feature References
+
+Detailed documentation for each implemented feature can be found in the [**Feature Reference Index**](./docs/reference/README.md).
+
+-   [**Memory Reference**](./docs/reference/memory.md)
+-   [**Profile & Identity Reference**](./docs/reference/profile.md)
+-   [**Search Reference**](./docs/reference/search.md)
+-   [**RAG Reference**](./docs/reference/rag.md)
+-   [**Slack Reference**](./docs/reference/slack.md)
+-   [**Reminders Reference**](./docs/reference/reminders.md)
+-   [**Date & Time Reference**](./docs/reference/datetime.md)
+
 ## Technology Stack
 
 | Component | Technology |
