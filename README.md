@@ -96,10 +96,11 @@ User receives agent response
 | **Multi-channel** | Slack (MVP), WhatsApp, Console → Discord |
 | **Agentic reasoning** | ReAct loop with LLM-powered planning |
 | **Resilience** | Automatic retries via **Spring Retry** and error feedback |
+| **Observability** | Standardized tracing and metrics via **OpenTelemetry** and **Micrometer** |
 | **Compound Tasks** | Multi-step task planning and sequential tool orchestration |
-| **Local & MCP tools** | GitHub, Slack, DateTime, Memory management, Notion |
+| **Local & MCP tools** | GitHub, Slack, Clock, Web Search (Tavily), Memory Curation, Notion |
 | **RAG knowledge** | Vector-indexed channel history for contextual answers |
-| **Layered memory** | Short-term → working → long-term → profiles → task state |
+| **Layered memory** | Short-term → working → long-term → profiles → task state (with search & curation) |
 | **Reminders** | Time-based reminders with cron scheduling |
 | **Advanced Heartbeat** | Periodic checks with system-wide event broadcasting |
 | **RAG Toggle** | Feature flag to disable RAG by default (`openclaw4j.rag.enabled`) |
@@ -185,7 +186,7 @@ graph TD
     style TS fill:#E74C3C,color:#fff
 ```
 
-**Recall protocol:** Before answering about past work, preferences, or todos, the agent searches `MEMORY.md` + `memory/*.md`, loads only needed lines, and includes them in the prompt context.
+**Recall & Curation protocol:** Before answering about past work, preferences, or todos, the agent searches `MEMORY.md` + `memory/*.md`, loads only needed lines, and includes them in the prompt context. The agent can also explicitly search, update, or remove facts from its long-term memory to keep it accurate and concise.
 
 ## MVP Roadmap
 
@@ -199,6 +200,8 @@ graph TD
 | **MVP-6** | Scheduler | Reminders, heartbeat, periodic tasks | Done |
 | **MVP-7** | Polish | Compound tasks, error handling, advanced heartbeat | Done |
 | **MVP-8** | WhatsApp | WhatsApp Business Cloud API channel adapter | Done |
+| **MVP-9** | Observability | Standardized tracing & metrics with OpenTelemetry | Done |
+| **MVP-10** | Enhanced Memory | Advanced memory curation, searching, and updates | Done |
 
 > See [docs/PRD.md](./PRD.md) for the full specification with detailed diagrams.
 
@@ -266,6 +269,15 @@ cp .env.example .env
 # Run with Ollama (local)
 ./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
 ```
+
+## Observability
+
+OpenClaw4J is fully instrumented for monitoring and tracing:
+
+-   **Micrometer + OpenTelemetry**: Standardized tracing across the agent's reasoning loop.
+-   **Tracing spans**: Captures details for every `Think → Act → Observe` step in the ReAct loop.
+-   **Metrics**: Tracks token usage, tool execution time, and success/failure rates.
+-   **OTLP Exporter**: Ready to send telemetry to Jaeger, Zipkin, or OTLP-compatible backends.
 
 ## Design Principles
 
