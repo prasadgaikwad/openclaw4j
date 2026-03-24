@@ -2,7 +2,10 @@ package dev.prasadgaikwad.openclaw4j.memory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.ai.document.Document;
+import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +14,9 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * File-backed implementation of the {@link MemoryService}.
@@ -31,16 +36,19 @@ public class FileMemoryService implements MemoryService {
     private final Path ROOT_PATH;
     private final Path MEMORY_MD;
     private final Path DAILY_LOG_DIR;
+    private final RAGService ragService;
 
-    public FileMemoryService() {
-        this(Path.of(".memory"));
+    @Autowired
+    public FileMemoryService(RAGService ragService) {
+        this(Path.of(".memory"), ragService);
     }
 
     // visible for testing
-    FileMemoryService(Path rootPath) {
+    FileMemoryService(Path rootPath, RAGService ragService) {
         this.ROOT_PATH = rootPath;
         this.MEMORY_MD = ROOT_PATH.resolve("MEMORY.md");
         this.DAILY_LOG_DIR = ROOT_PATH.resolve("daily");
+        this.ragService = ragService;
 
         try {
             Files.createDirectories(DAILY_LOG_DIR);
@@ -71,6 +79,12 @@ public class FileMemoryService implements MemoryService {
         try {
             String entry = "- " + fact + "\n";
             Files.writeString(MEMORY_MD, entry, StandardOpenOption.APPEND);
+            
+            if (ragService != null) {
+                Document doc = new Document(generateId(fact), fact, Map.of("source", "MEMORY.md"));
+                ragService.indexDocuments(List.of(doc));
+            }
+            
             log.info("Remembered new fact: {}", fact);
         } catch (IOException e) {
             log.error("Failed to write to MEMORY.md", e);
@@ -146,12 +160,23 @@ public class FileMemoryService implements MemoryService {
             }
             String lowerFact = fact.toLowerCase();
             List<String> allLines = Files.readAllLines(MEMORY_MD);
+            List<String> removedLines = allLines.stream()
+                    .filter(line -> line.toLowerCase().contains(lowerFact))
+                    .toList();
             List<String> retained = allLines.stream()
                     .filter(line -> !line.toLowerCase().contains(lowerFact))
                     .toList();
             boolean removed = retained.size() < allLines.size();
             if (removed) {
                 Files.writeString(MEMORY_MD, String.join("\n", retained) + "\n");
+                
+                if (ragService != null && !removedLines.isEmpty()) {
+                    List<String> idsToDelete = removedLines.stream()
+                            .map(line -> generateId(cleanFact(line)))
+                            .toList();
+                    ragService.deleteDocuments(idsToDelete);
+                }
+                
                 log.info("Forgot fact matching: {}", fact);
             }
             return removed;
@@ -170,10 +195,12 @@ public class FileMemoryService implements MemoryService {
             String lowerOld = oldFact.toLowerCase();
             List<String> allLines = Files.readAllLines(MEMORY_MD);
             boolean[] updated = {false};
+            List<String> removedLines = new ArrayList<>();
             List<String> newLines = allLines.stream()
                     .map(line -> {
                         if (!updated[0] && line.toLowerCase().contains(lowerOld)) {
                             updated[0] = true;
+                            removedLines.add(line);
                             // Preserve the leading "- " bullet if present
                             return line.startsWith("- ") ? "- " + newFact : newFact;
                         }
@@ -182,6 +209,17 @@ public class FileMemoryService implements MemoryService {
                     .toList();
             if (updated[0]) {
                 Files.writeString(MEMORY_MD, String.join("\n", newLines) + "\n");
+                
+                if (ragService != null && !removedLines.isEmpty()) {
+                    List<String> idsToDelete = removedLines.stream()
+                            .map(line -> generateId(cleanFact(line)))
+                            .toList();
+                    ragService.deleteDocuments(idsToDelete);
+                    
+                    Document newDoc = new Document(generateId(newFact), newFact, Map.of("source", "MEMORY.md"));
+                    ragService.indexDocuments(List.of(newDoc));
+                }
+                
                 log.info("Updated fact '{}' to '{}'", oldFact, newFact);
             }
             return updated[0];
@@ -189,5 +227,16 @@ public class FileMemoryService implements MemoryService {
             log.error("Failed to update fact in MEMORY.md", e);
             return false;
         }
+    }
+
+    private String generateId(String fact) {
+        return UUID.nameUUIDFromBytes(fact.trim().toLowerCase().getBytes()).toString();
+    }
+
+    private String cleanFact(String line) {
+        if (line.startsWith("- ")) {
+            return line.substring(2);
+        }
+        return line;
     }
 }

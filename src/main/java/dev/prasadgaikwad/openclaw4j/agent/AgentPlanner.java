@@ -13,6 +13,8 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 import dev.prasadgaikwad.openclaw4j.tool.ToolResultStore;
+import dev.prasadgaikwad.openclaw4j.rag.RAGService;
+import org.springframework.ai.document.Document;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -47,9 +49,11 @@ public class AgentPlanner {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentPlanner.class);
     private final ChatClient chatClient;
+    private final RAGService ragService;
 
-    public AgentPlanner(ChatClient chatClient) {
+    public AgentPlanner(ChatClient chatClient, RAGService ragService) {
         this.chatClient = chatClient;
+        this.ragService = ragService;
     }
 
     /**
@@ -100,10 +104,12 @@ public class AgentPlanner {
         fullSystemPrompt.append(coreInstructions);
 
         // Append Long-Term Memory (Slice 4)
-        List<String> memories = context.memory().relevantMemories();
-        if (memories != null && !memories.isEmpty()) {
+        List<Document> memoryDocs = ragService.findRelevantDocuments(context.message().content());
+        if (memoryDocs != null && !memoryDocs.isEmpty()) {
             fullSystemPrompt.append("\n### Long-Term Memory (Relevant Facts):\n");
-            memories.forEach(m -> fullSystemPrompt.append("- ").append(m).append("\n"));
+            memoryDocs.stream()
+                      .limit(5)
+                      .forEach(m -> fullSystemPrompt.append("- ").append(m.getText()).append("\n"));
         }
 
         // Append Profile Directive (Slice 4)

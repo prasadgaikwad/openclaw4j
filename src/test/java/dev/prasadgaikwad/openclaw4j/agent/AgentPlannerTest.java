@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -28,6 +29,9 @@ class AgentPlannerTest {
     private ChatClient chatClient;
 
     @Mock
+    private RAGService ragService;
+
+    @Mock
     private ChatClient.ChatClientRequestSpec requestSpec;
 
     @Mock
@@ -37,7 +41,7 @@ class AgentPlannerTest {
 
     @BeforeEach
     void setUp() {
-        agentPlanner = new AgentPlanner(chatClient);
+        agentPlanner = new AgentPlanner(chatClient, ragService);
 
         // Default mock chain for ChatClient
         when(chatClient.prompt()).thenReturn(requestSpec);

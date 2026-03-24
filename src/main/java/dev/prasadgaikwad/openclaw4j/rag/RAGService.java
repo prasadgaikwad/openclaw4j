@@ -22,4 +22,11 @@ public interface RAGService {
      * @param documents documents to index
      */
     void indexDocuments(List<Document> documents);
+
+    /**
+     * Deletes documents from the vector store by their IDs.
+     * 
+     * @param documentIds list of document IDs to delete
+     */
+    void deleteDocuments(List<String> documentIds);
 }

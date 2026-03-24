@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import dev.prasadgaikwad.openclaw4j.rag.RAGService;
 
 class FileMemoryServiceTest {
 
@@ -20,6 +22,7 @@ class FileMemoryServiceTest {
     private FileMemoryService memoryService;
     private Path memoryMd;
     private Path dailyDir;
+    private RAGService ragService;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -30,7 +33,8 @@ class FileMemoryServiceTest {
         Files.createDirectories(dailyDir);
         Files.writeString(memoryMd, "# OpenClaw4J Memory\n\nCurated decisions and preferences.\n");
         
-        memoryService = new FileMemoryService(tempDir);
+        ragService = mock(RAGService.class);
+        memoryService = new FileMemoryService(tempDir, ragService);
     }
 
     @Test
