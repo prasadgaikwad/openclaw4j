@@ -13,8 +13,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 import dev.prasadgaikwad.openclaw4j.tool.ToolResultStore;
-import dev.prasadgaikwad.openclaw4j.rag.RAGService;
-import org.springframework.ai.document.Document;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -49,11 +47,9 @@ public class AgentPlanner {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentPlanner.class);
     private final ChatClient chatClient;
-    private final RAGService ragService;
 
-    public AgentPlanner(ChatClient chatClient, RAGService ragService) {
+    public AgentPlanner(ChatClient chatClient) {
         this.chatClient = chatClient;
-        this.ragService = ragService;
     }
 
     /**
@@ -89,6 +85,7 @@ public class AgentPlanner {
                 1. ANALYZE: Carefully read the user request and any context.
                 2. BREAK DOWN: Split complex tasks into logical, sequential steps.
                 3. TOOL USAGE: Execute tools one by one. Use the results of each tool to decide your next move.
+                   - If you need to recall past user preferences, saved facts, or previous conversation history, use the `searchKnowledgeBase` tool.
                 4. FINAL SYNTHESIS (CRITICAL): Once you have enough information, you MUST provide a final, helpful, and concise answer to the user.
                    - NEVER end your response with just tool JSON or empty content.
                    - If you used search results, summarize them in your own words.
@@ -103,14 +100,6 @@ public class AgentPlanner {
         StringBuilder fullSystemPrompt = new StringBuilder(systemPromptIdentity);
         fullSystemPrompt.append(coreInstructions);
 
-        // Append Long-Term Memory (Slice 4)
-        List<Document> memoryDocs = ragService.findRelevantDocuments(context.message().content());
-        if (memoryDocs != null && !memoryDocs.isEmpty()) {
-            fullSystemPrompt.append("\n### Long-Term Memory (Relevant Facts):\n");
-            memoryDocs.stream()
-                      .limit(5)
-                      .forEach(m -> fullSystemPrompt.append("- ").append(m.getText()).append("\n"));
-        }
 
         // Append Profile Directive (Slice 4)
         context.memory().soulDirective().ifPresent(d -> {

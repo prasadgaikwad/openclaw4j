@@ -29,7 +29,7 @@ public class RAGTool implements AITool {
      * @param query the search query
      * @return a summary of relevant documents found
      */
-    @Tool(description = "Searches the agent's knowledge base for information from past channel discussions and documentation.")
+    @Tool(description = "Searches the agent's long-term memory, knowledge base, saved facts, and past channel discussions. Call this whenever you need context about the user or past decisions.")
     public String searchKnowledgeBase(String query) {
         log.info("Agent searching knowledge base for: {}", query);
         var docs = ragService.findRelevantDocuments(query);
