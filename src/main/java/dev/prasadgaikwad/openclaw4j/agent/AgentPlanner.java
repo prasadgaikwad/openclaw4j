@@ -85,6 +85,8 @@ public class AgentPlanner {
                 1. ANALYZE: Carefully read the user request and any context.
                 2. BREAK DOWN: Split complex tasks into logical, sequential steps.
                 3. TOOL USAGE: Execute tools one by one. Use the results of each tool to decide your next move.
+                   - If you need to recall past user preferences, saved facts, or previous conversation history, use the `searchKnowledgeBase` tool.
+                   - CRITICAL: If a tool returns no relevant information or fails, DO NOT call it again. Proceed with the information you have.
                 4. FINAL SYNTHESIS (CRITICAL): Once you have enough information, you MUST provide a final, helpful, and concise answer to the user.
                    - NEVER end your response with just tool JSON or empty content.
                    - If you used search results, summarize them in your own words.
@@ -95,21 +97,17 @@ public class AgentPlanner {
         if (systemPromptIdentity == null || systemPromptIdentity.isBlank()) {
             systemPromptIdentity = "You are OpenClaw4J, a powerful and autonomous AI agent.";
         }
+        logger.debug("System Prompt Identity: {}", systemPromptIdentity);
 
         StringBuilder fullSystemPrompt = new StringBuilder(systemPromptIdentity);
         fullSystemPrompt.append(coreInstructions);
-
-        // Append Long-Term Memory (Slice 4)
-        List<String> memories = context.memory().relevantMemories();
-        if (memories != null && !memories.isEmpty()) {
-            fullSystemPrompt.append("\n### Long-Term Memory (Relevant Facts):\n");
-            memories.forEach(m -> fullSystemPrompt.append("- ").append(m).append("\n"));
-        }
+        logger.debug("Core Instructions: {}", coreInstructions);
 
         // Append Profile Directive (Slice 4)
         context.memory().soulDirective().ifPresent(d -> {
             fullSystemPrompt.append("\n### Soul Directive:\n").append(d).append("\n");
         });
+        logger.debug("Soul Directive: {}", context.memory().soulDirective().orElse("No soul directive"));
 
         // Append RAG Documents (Slice 5)
         if (context.ragDocuments() != null && !context.ragDocuments().isEmpty()) {
@@ -118,6 +116,7 @@ public class AgentPlanner {
                 fullSystemPrompt.append("- ").append(doc.getText()).append("\n");
             });
         }
+        logger.debug("RAG Documents: {}", context.ragDocuments());
 
         // Append Current Context (Slice 6)
         String nowWithOffset = OffsetDateTime.now().toString();
@@ -171,7 +170,8 @@ public class AgentPlanner {
      * A follow-up LLM call used when the primary planning response is empty.
      *
      * <p>
-     * When tool results are available (e.g. from {@link dev.prasadgaikwad.openclaw4j.tool.ToolResultStore}),
+     * When tool results are available (e.g. from
+     * {@link dev.prasadgaikwad.openclaw4j.tool.ToolResultStore}),
      * they are embedded directly into the system prompt so the model can
      * produce an accurate synthesis rather than a generic confirmation.
      * </p>
@@ -179,15 +179,16 @@ public class AgentPlanner {
      * @param originalUserInput the original message from the user
      * @param toolResults       the raw tool output captured during the ReAct loop,
      *                          or {@code null} if no tool was called
-     * @return a non-empty summary string, or a safe fallback if the recovery also fails
+     * @return a non-empty summary string, or a safe fallback if the recovery also
+     *         fails
      */
     @SuppressWarnings("null")
     private String fireRecoveryPrompt(String originalUserInput, String toolResults) {
         try {
             StringBuilder recoverySystemPromptBuilder = new StringBuilder(
                     "You are a helpful assistant. The user asked a question and a tool was executed "
-                    + "to answer it. Your job is to write a clear, friendly, and concise response "
-                    + "to the user based on the information below.");
+                            + "to answer it. Your job is to write a clear, friendly, and concise response "
+                            + "to the user based on the information below.");
 
             if (toolResults != null && !toolResults.isBlank()) {
                 recoverySystemPromptBuilder

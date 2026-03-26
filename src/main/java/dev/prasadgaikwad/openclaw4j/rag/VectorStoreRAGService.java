@@ -47,4 +47,13 @@ public class VectorStoreRAGService implements RAGService {
         log.info("Split into {} chunks for vector store", splitDocuments.size());
         vectorStore.add(splitDocuments);
     }
+
+    @Override
+    public void deleteDocuments(List<String> documentIds) {
+        if (documentIds == null || documentIds.isEmpty()) {
+            return;
+        }
+        log.info("Deleting {} documents from vector store", documentIds.size());
+        vectorStore.delete(documentIds);
+    }
 }

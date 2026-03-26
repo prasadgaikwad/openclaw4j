@@ -186,7 +186,7 @@ graph TD
     style TS fill:#E74C3C,color:#fff
 ```
 
-**Recall & Curation protocol:** Before answering about past work, preferences, or todos, the agent searches `MEMORY.md` + `memory/*.md`, loads only needed lines, and includes them in the prompt context. The agent can also explicitly search, update, or remove facts from its long-term memory to keep it accurate and concise.
+**Recall & Curation protocol:** Before answering about past work, preferences, or todos, the agent uses semantic vector search (via pgvector) to retrieve the top 3-5 most relevant facts from its long-term memory (`MEMORY.md`) and includes them in the prompt context. The agent can also explicitly search, update, or remove facts from its long-term memory to keep it accurate and concise.
 
 ## MVP Roadmap
 
