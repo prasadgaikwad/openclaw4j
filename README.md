@@ -1,6 +1,6 @@
 # 🦞 OpenClaw4J
 
-> **An autonomous AI agent framework for Java** — built with Spring Boot 3.5.10, Spring AI 1.1.2, and Java 25.
+> **An autonomous AI agent framework for Java** — built with Spring Boot 4.1.0, Spring AI 2.0.0, and Java 25.
 
 OpenClaw4J is an intelligent agent that lives inside your messaging channels. Send it a message in natural language — it reads, understands, plans, and executes tasks using LLM reasoning, MCP tools, RAG retrieval, and layered persistent memory — then reports back in the same channel.
 
@@ -122,8 +122,8 @@ Detailed documentation for each implemented feature can be found in the [**Featu
 | Component | Technology |
 |-----------|-----------|
 | Language | Java 25 (records, sealed types, virtual threads, structured concurrency) |
-| Framework | Spring Boot 3.5.10 (modular starters, declarative clients, `@Retryable`) |
-| AI | Spring AI 1.1.2 (ChatClient, OpenAI, Ollama, Tools) |
+| Framework | Spring Boot 4.1.0 (modular starters, declarative clients, `@Retryable`) |
+| AI | Spring AI 2.0.0 (ChatClient, OpenAI, Ollama, Tools) |
 | Tools | GitHub API, Slack Bolt SDK |
 | Vector Store | PGVector (PostgreSQL) |
 | Build | Gradle (Kotlin DSL) |
@@ -230,26 +230,30 @@ graph TD
 OpenClaw4J supports multiple LLM providers. You can switch them without changing code by updating `application.yml` or using command-line arguments.
 
 #### Switching via Property
-Set the provider in `src/main/resources/application.yml`:
+Set the active profile in `src/main/resources/application.yml` (Spring AI 2.x selects the provider via `spring.ai.model.chat`):
 
 ```yaml
-openclaw4j:
+spring:
+  config:
+    activate:
+      on-profile: openai # or 'ollama'
   ai:
-    provider: ollama # or 'openai'
+    model:
+      chat: openai # or 'ollama'
 ```
 
 #### Running with Ollama (Local)
 1. Ensure Ollama is running (`ollama serve`).
-2. Activate the `ollama` profile and set the provider:
+2. Activate the `ollama` profile:
    ```bash
-   ./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
+   ./gradlew bootRun --args='--spring.profiles.active=ollama'
    ```
 
 #### Running with OpenAI (Cloud)
 1. Set your API key: `export SPRING_AI_OPENAI_API_KEY=sk-...`
-2. Run with default settings or explicit profile:
+2. Run with the `openai` profile:
    ```bash
-   ./gradlew bootRun --args='--spring.profiles.active=openai --openclaw4j.ai.provider=openai'
+   ./gradlew bootRun --args='--spring.profiles.active=openai'
    ```
 
 ### Quick Start
@@ -267,7 +271,7 @@ cp .env.example .env
 ./gradlew bootRun
 
 # Run with Ollama (local)
-./gradlew bootRun --args='--spring.profiles.active=ollama --openclaw4j.ai.provider=ollama'
+./gradlew bootRun --args='--spring.profiles.active=ollama'
 ```
 
 ## Observability
@@ -293,4 +297,4 @@ MIT
 
 ---
 
-*Built with ❤️ using Spring Boot 3.5.10, Spring AI 1.1.2, and Java 25.*
+*Built with ❤️ using Spring Boot 4.1.0, Spring AI 2.0.0, and Java 25.*

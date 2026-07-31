@@ -25,6 +25,9 @@ import static org.mockito.Mockito.*;
 class AgentPlannerTest {
 
     @Mock
+    private ChatClient.Builder chatClientBuilder;
+
+    @Mock
     private ChatClient chatClient;
 
     @Mock
@@ -37,15 +40,13 @@ class AgentPlannerTest {
 
     @BeforeEach
     void setUp() {
-        agentPlanner = new AgentPlanner(chatClient);
+        when(chatClientBuilder.build()).thenReturn(chatClient);
+        agentPlanner = new AgentPlanner(chatClientBuilder);
 
         // Default mock chain for ChatClient
         when(chatClient.prompt()).thenReturn(requestSpec);
-        when(requestSpec.advisors(any(org.springframework.ai.chat.client.advisor.api.Advisor[].class)))
-                .thenReturn(requestSpec);
         when(requestSpec.messages(anyList())).thenReturn(requestSpec);
         when(requestSpec.tools(any(Object[].class))).thenReturn(requestSpec);
-        when(requestSpec.toolCallbacks(anyList())).thenReturn(requestSpec);
         when(requestSpec.call()).thenReturn(responseSpec);
     }
 
