@@ -9,23 +9,20 @@ spring:
   main:
     web-application-type: servlet
   
-  # Global AI Defaults - Disabled by default to prevent bean conflicts
-  # Only one should be enabled via profiles below.
+  # Global AI Defaults - Chat provider is selected per profile via
+  # spring.ai.model.chat (Spring AI 2.x provider-selection property).
   ai:
+    model:
+      chat: none
+      embedding: ollama
     openai:
       api-key: ${SPRING_AI_OPENAI_API_KEY:any}
       chat:
-        enabled: false
-        options:
-          model: gpt-4o
+        model: gpt-4o
     ollama:
       base-url: http://localhost:11434
       chat:
-        enabled: false
-        options:
-          model: kimi-k2-thinking:cloud
-    model:
-      embedding: ${openclaw4j.ai.provider:ollama}
+        model: kimi-k2-thinking:cloud
     mcp:
       client:
         stdio:
@@ -68,9 +65,6 @@ openclaw4j:
       api-version: v21.0
     console:
       enabled: ${CONSOLE_ENABLED:false}
-  ai:
-    # Options: openai, ollama
-    provider: ollama
   rag:
     enabled: true
     channels: ${SLACK_CHANNEL_IDS:}
@@ -128,9 +122,8 @@ spring:
     activate:
       on-profile: openai
   ai:
-    openai:
-      chat:
-        enabled: true
+    model:
+      chat: openai
 
 ---
 # ─────────────────────────────────────────────
@@ -141,6 +134,5 @@ spring:
     activate:
       on-profile: ollama
   ai:
-    ollama:
-      chat:
-        enabled: true
+    model:
+      chat: ollama

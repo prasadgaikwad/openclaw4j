@@ -1,6 +1,6 @@
 # OpenClaw4J — Product Requirements Document & Technical Specification
 
-> **An autonomous AI agent framework for Java, built with Spring Boot 4.0.2, Spring AI 1.1.2, and Java 25.**
+> **An autonomous AI agent framework for Java, built with Spring Boot 4.1.0, Spring AI 2.0.0, and Java 25.**
 > Connects to messaging platforms (Slack, Discord, WhatsApp), plans and executes tasks using LLM-powered agentic reasoning, MCP tools, RAG, and a layered memory system.
 
 ---
@@ -844,8 +844,8 @@ The heartbeat system runs periodic checks and maintains state:
 | Layer | Technology | Version |
 |-------|-----------|---------|
 | **Language** | Java | 25 (LTS) |
-| **Framework** | Spring Boot | 4.0.2 |
-| **AI Framework** | Spring AI | 1.1.2 |
+| **Framework** | Spring Boot | 4.1.0 |
+| **AI Framework** | Spring AI | 2.0.0 |
 | **Spring Framework** | Spring Framework | 7.x |
 | **Build** | Gradle (Kotlin DSL) | 8.x |
 | **Servlet** | Jakarta EE 11 (Servlet 6.1) | — |

@@ -41,7 +41,13 @@ public class VectorStoreRAGService implements RAGService {
         }
         log.info("Indexing {} documents into vector store", documents.size());
 
-        TokenTextSplitter textSplitter = new TokenTextSplitter(256, 128, 5, 10000, true);
+        TokenTextSplitter textSplitter = TokenTextSplitter.builder()
+                .withChunkSize(256)
+                .withMinChunkSizeChars(128)
+                .withMinChunkLengthToEmbed(5)
+                .withMaxNumChunks(10000)
+                .withKeepSeparator(true)
+                .build();
         List<Document> splitDocuments = textSplitter.apply(documents);
 
         log.info("Split into {} chunks for vector store", splitDocuments.size());

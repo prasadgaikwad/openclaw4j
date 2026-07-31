@@ -6,7 +6,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import io.micrometer.observation.annotation.Observed;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
@@ -28,15 +27,14 @@ import java.util.List;
  * coordinates
  * the transformation of the current context into a series of messages (System,
  * History, User)
- * and leverages a {@link ToolCallAdvisor} to handle the internal <b>ReAct</b>
- * loop for
- * automatic tool execution.
+ * and relies on the auto-registered {@code ToolCallingAdvisor} (Spring AI 2.x)
+ * to handle the internal <b>ReAct</b> loop for automatic tool execution.
  * </p>
  *
  * <h3>Usage Example:</h3>
  * 
  * <pre>
- * AgentPlanner planner = new AgentPlanner(chatClient);
+ * AgentPlanner planner = new AgentPlanner(chatClientBuilder);
  * String result = planner.plan(assembledContext);
  * </pre>
  *
@@ -48,8 +46,8 @@ public class AgentPlanner {
     private static final Logger logger = LoggerFactory.getLogger(AgentPlanner.class);
     private final ChatClient chatClient;
 
-    public AgentPlanner(ChatClient chatClient) {
-        this.chatClient = chatClient;
+    public AgentPlanner(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
     }
 
     /**
@@ -58,9 +56,9 @@ public class AgentPlanner {
      * <p>
      * This method assembles a prompt from the {@link AgentContext} and calls the
      * LLM.
-     * It uses {@link ToolCallAdvisor} to automatically handle any tool calls
-     * requested
-     * by the model, returning the final synthesized answer.
+     * It relies on the auto-registered {@code ToolCallingAdvisor} to automatically
+     * handle any tool calls requested by the model, returning the final
+     * synthesized answer.
      * </p>
      * 
      * <p>
@@ -141,12 +139,14 @@ public class AgentPlanner {
         // Add current user message (not yet in history/ShortTermMemory at this point)
         messages.add(new UserMessage(context.message().content()));
 
-        // 3. Primary LLM call (includes full tool-calling ReAct loop via advisor)
+        // 3. Primary LLM call (includes full tool-calling ReAct loop via the
+        // auto-registered ToolCallingAdvisor)
+        List<Object> allTools = new ArrayList<>(context.localTools());
+        allTools.addAll(context.mcpTools());
+
         String response = chatClient.prompt()
-                .advisors(ToolCallAdvisor.builder().build())
                 .messages(messages)
-                .tools(context.localTools().toArray())
-                .toolCallbacks(context.mcpTools())
+                .tools(allTools.toArray())
                 .call()
                 .content();
 

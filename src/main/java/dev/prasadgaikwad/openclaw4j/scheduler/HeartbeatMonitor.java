@@ -1,8 +1,6 @@
 package dev.prasadgaikwad.openclaw4j.scheduler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,14 +23,12 @@ public class HeartbeatMonitor {
 
     private static final Logger log = LoggerFactory.getLogger(HeartbeatMonitor.class);
     private static final Path STATE_FILE = Path.of(".memory/heartbeat-state.json");
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final ApplicationEventPublisher eventPublisher;
 
-    public HeartbeatMonitor(ApplicationEventPublisher eventPublisher) {
+    public HeartbeatMonitor(ApplicationEventPublisher eventPublisher, JsonMapper jsonMapper) {
         this.eventPublisher = eventPublisher;
-        this.objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.jsonMapper = jsonMapper;
 
         try {
             Files.createDirectories(STATE_FILE.getParent());
@@ -82,7 +78,8 @@ public class HeartbeatMonitor {
             return new HashMap<>();
         }
         try {
-            return objectMapper.readValue(STATE_FILE.toFile(), Map.class);
+            String content = Files.readString(STATE_FILE);
+            return jsonMapper.readValue(content, Map.class);
         } catch (IOException e) {
             log.warn("Could not read heartbeat state, starting fresh", e);
             return new HashMap<>();
@@ -91,7 +88,8 @@ public class HeartbeatMonitor {
 
     private void saveState(Map<String, Object> state) {
         try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(STATE_FILE.toFile(), state);
+            String content = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(state);
+            Files.writeString(STATE_FILE, content);
         } catch (IOException e) {
             log.error("Failed to save heartbeat state", e);
         }
