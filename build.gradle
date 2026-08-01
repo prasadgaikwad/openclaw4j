@@ -37,8 +37,8 @@ dependencies {
     // - bolt: core event handling and middleware
     // - bolt-servlet: adapts Bolt to run as a Servlet (fits Spring Boot's embedded Tomcat)
     // ─────────────────────────────────────────────
-    implementation 'com.slack.api:bolt:1.47.0'
-    implementation 'com.slack.api:bolt-jakarta-servlet:1.47.0'
+    implementation 'com.slack.api:bolt:1.49.0'
+    implementation 'com.slack.api:bolt-jakarta-servlet:1.49.0'
 
     // ─────────────────────────────────────────────
     // Spring AI
@@ -62,8 +62,8 @@ dependencies {
     // ─────────────────────────────────────────────
     // Observability
     // ─────────────────────────────────────────────
-    // Micrometer Tracing
-    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    // Micrometer Tracing (Boot 4: OpenTelemetry bridge in its own module)
+    implementation 'org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry'
     implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
 
     // Prometheus metrics registry (required for the actuator prometheus endpoint)
